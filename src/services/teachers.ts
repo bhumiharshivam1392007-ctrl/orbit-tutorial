@@ -1,3 +1,4 @@
+import { createClient } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import type { TeacherWithProfile, Batch } from "@/types/database"
 
@@ -37,6 +38,7 @@ export async function fetchTeachers(): Promise<TeacherListItem[]> {
 export async function createTeacher(data: TeacherFormData) {
   let profileId: string | null = null
 
+  // 1. Try Edge function first
   try {
     const { data: funcData, error: funcError } = await supabase.functions.invoke("create-user", {
       body: {
@@ -48,26 +50,69 @@ export async function createTeacher(data: TeacherFormData) {
       },
     })
 
-    if (funcError) {
-      throw new Error(funcError.message || "Failed to create teacher account via Edge Function")
+    if (!funcError && funcData?.user?.id) {
+      profileId = funcData.user.id
     }
+  } catch (err) {
+    console.warn("Edge function not available, using client auth:", err)
+  }
 
-    profileId = funcData?.user?.id
-  } catch (err: any) {
-    console.warn("Edge function invocation failed, checking profiles:", err)
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", data.email.trim())
-      .maybeSingle()
+  // 2. Fallback: Use ephemeral Supabase client (persistSession: false keeps Admin logged in)
+  if (!profileId) {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-    if (existingProfile) {
-      profileId = (existingProfile as any).id
-    } else {
-      throw new Error(
-        err.message ||
-        "Could not create user account. Make sure the 'create-user' Supabase Edge Function is deployed or create the user in the Supabase Auth dashboard."
-      )
+    const ephemeralClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    })
+
+    const { data: authData, error: authError } = await ephemeralClient.auth.signUp({
+      email: data.email.trim(),
+      password: data.password || "Teacher@123",
+      options: {
+        data: {
+          full_name: data.full_name.trim(),
+          role: "teacher",
+          phone: data.phone?.trim() || null,
+        },
+      },
+    })
+
+    if (authError) {
+      // Check if user profile already exists
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", data.email.trim())
+        .maybeSingle()
+
+      if (existingProfile) {
+        profileId = (existingProfile as any).id
+      } else {
+        throw new Error(authError.message || "Failed to create teacher account")
+      }
+    } else if (authData?.user?.id) {
+      profileId = authData.user.id
+
+      // Ensure profile row exists
+      try {
+        await supabase.from("profiles").upsert(
+          {
+            id: profileId,
+            email: data.email.trim(),
+            full_name: data.full_name.trim(),
+            role: "teacher",
+            phone: data.phone?.trim() || null,
+          } as any,
+          { onConflict: "id" }
+        )
+      } catch (err) {
+        console.warn("Notice during profile upsert:", err)
+      }
     }
   }
 
