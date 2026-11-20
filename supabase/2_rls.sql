@@ -99,72 +99,83 @@ CREATE POLICY students_student_select
 -- =============================================
 
 DROP POLICY IF EXISTS teachers_admin_all ON public.teachers;
-CREATE POLICY teachers_admin_all
-  ON public.teachers
-  FOR ALL
-  USING (get_my_role() = 'admin')
-  WITH CHECK (get_my_role() = 'admin');
-
 DROP POLICY IF EXISTS teachers_teacher_select ON public.teachers;
-CREATE POLICY teachers_teacher_select
+DROP POLICY IF EXISTS teachers_teacher_update ON public.teachers;
+DROP POLICY IF EXISTS teachers_select_authenticated ON public.teachers;
+DROP POLICY IF EXISTS teachers_admin_insert ON public.teachers;
+DROP POLICY IF EXISTS teachers_admin_delete ON public.teachers;
+DROP POLICY IF EXISTS teachers_update_policy ON public.teachers;
+
+-- 1. All authenticated users can read teacher profiles (needed for class rosters and course listings)
+CREATE POLICY teachers_select_authenticated
   ON public.teachers
   FOR SELECT
-  USING (
-    get_my_role() = 'teacher'
-    AND profile_id = auth.uid()
-  );
+  TO authenticated
+  USING (true);
 
-DROP POLICY IF EXISTS teachers_teacher_update ON public.teachers;
-CREATE POLICY teachers_teacher_update
+-- 2. Only admin can insert teachers
+CREATE POLICY teachers_admin_insert
+  ON public.teachers
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (get_my_role() = 'admin');
+
+-- 3. Only admin can delete teachers
+CREATE POLICY teachers_admin_delete
+  ON public.teachers
+  FOR DELETE
+  TO authenticated
+  USING (get_my_role() = 'admin');
+
+-- 4. Admin or the teacher can update teacher records
+CREATE POLICY teachers_update_policy
   ON public.teachers
   FOR UPDATE
-  USING (
-    get_my_role() = 'teacher'
-    AND profile_id = auth.uid()
-  )
-  WITH CHECK (
-    get_my_role() = 'teacher'
-    AND profile_id = auth.uid()
-  );
+  TO authenticated
+  USING (get_my_role() = 'admin' OR profile_id = auth.uid())
+  WITH CHECK (get_my_role() = 'admin' OR profile_id = auth.uid());
 
 
 -- =============================================
--- BATCHES POLICIES
+-- BATCHES POLICIES (Non-recursive)
 -- =============================================
 
 DROP POLICY IF EXISTS batches_admin_all ON public.batches;
-CREATE POLICY batches_admin_all
+DROP POLICY IF EXISTS batches_teacher_select ON public.batches;
+DROP POLICY IF EXISTS batches_student_select ON public.batches;
+DROP POLICY IF EXISTS batches_select_authenticated ON public.batches;
+DROP POLICY IF EXISTS batches_admin_insert ON public.batches;
+DROP POLICY IF EXISTS batches_admin_update ON public.batches;
+DROP POLICY IF EXISTS batches_admin_delete ON public.batches;
+
+-- 1. All authenticated users can view active batches (eliminates circular recursion with enrollments!)
+CREATE POLICY batches_select_authenticated
   ON public.batches
-  FOR ALL
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- 2. Only admin can create batches
+CREATE POLICY batches_admin_insert
+  ON public.batches
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (get_my_role() = 'admin');
+
+-- 3. Only admin can update batches
+CREATE POLICY batches_admin_update
+  ON public.batches
+  FOR UPDATE
+  TO authenticated
   USING (get_my_role() = 'admin')
   WITH CHECK (get_my_role() = 'admin');
 
-DROP POLICY IF EXISTS batches_teacher_select ON public.batches;
-CREATE POLICY batches_teacher_select
+-- 4. Only admin can delete batches
+CREATE POLICY batches_admin_delete
   ON public.batches
-  FOR SELECT
-  USING (
-    get_my_role() = 'teacher'
-    AND teacher_id IN (
-      SELECT t.id
-      FROM public.teachers t
-      WHERE t.profile_id = auth.uid()
-    )
-  );
-
-DROP POLICY IF EXISTS batches_student_select ON public.batches;
-CREATE POLICY batches_student_select
-  ON public.batches
-  FOR SELECT
-  USING (
-    get_my_role() = 'student'
-    AND id IN (
-      SELECT e.batch_id
-      FROM public.enrollments e
-      JOIN public.students s ON s.id = e.student_id
-      WHERE s.profile_id = auth.uid()
-    )
-  );
+  FOR DELETE
+  TO authenticated
+  USING (get_my_role() = 'admin');
 
 
 -- =============================================
