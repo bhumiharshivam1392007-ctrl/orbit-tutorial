@@ -100,7 +100,7 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
 
   // 2. Fetch enrolled batches
   if (studentId) {
-    const { data: enrollmentsData } = await supabase
+    const { data: enrollmentsData, error: enrollError } = await supabase
       .from("enrollments")
       .select(`
         id,
@@ -126,6 +126,11 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
       .eq("student_id", studentId)
       .eq("status", "active")
 
+    if (enrollError) {
+      console.error("Error fetching student enrollments:", enrollError)
+      throw enrollError
+    }
+
     if (enrollmentsData) {
       batches = enrollmentsData
         .filter((e: any) => e.batches)
@@ -148,10 +153,15 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
     }
 
     // 3. Fetch attendance stats
-    const { data: attData } = await supabase
+    const { data: attData, error: attError } = await supabase
       .from("attendance")
       .select("id, status")
       .eq("student_id", studentId)
+
+    if (attError) {
+      console.error("Error fetching student attendance:", attError)
+      throw attError
+    }
 
     if (attData && attData.length > 0) {
       const total = attData.length
@@ -170,7 +180,7 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
     }
 
     // 4. Fetch fee payments
-    const { data: paymentData } = await supabase
+    const { data: paymentData, error: payError } = await supabase
       .from("fee_payments")
       .select(`
         id,
@@ -189,6 +199,11 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
       .eq("student_id", studentId)
       .order("payment_date", { ascending: false })
       .limit(10)
+
+    if (payError) {
+      console.error("Error fetching student fee payments:", payError)
+      throw payError
+    }
 
     if (paymentData) {
       payments = paymentData.map((p: any) => ({
@@ -222,7 +237,11 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
     annQuery = annQuery.in("target_audience", ["all", "students"])
   }
 
-  const { data: annData } = await annQuery
+  const { data: annData, error: annError } = await annQuery
+  if (annError) {
+    console.error("Error fetching student announcements:", annError)
+    throw annError
+  }
 
   if (annData) {
     announcements = annData.map((a: any) => {

@@ -71,6 +71,23 @@ export async function fetchAdminDashboardStats(): Promise<DashboardStats> {
       .eq("status", "active"),
   ])
 
+  // Check for any parallel query errors
+  const errors = [
+    studentsRes.error,
+    teachersRes.error,
+    batchesRes.error,
+    curMonthPaymentsRes.error,
+    recentPaymentsRes.error,
+    allPaymentsRes.error,
+    enrollmentsRes.error,
+  ].filter(Boolean)
+
+  if (errors.length > 0) {
+    const primaryError = errors[0]
+    console.error("Dashboard query error:", primaryError)
+    throw new Error(primaryError?.message || "Failed to load dashboard statistics from Supabase")
+  }
+
   // Fees collected this month
   const feesCollectedThisMonth = (curMonthPaymentsRes.data || []).reduce(
     (acc: number, curr: any) => acc + Number(curr.amount || 0),

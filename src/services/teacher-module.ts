@@ -106,18 +106,19 @@ export async function fetchTeacherDashboard(profileId: string): Promise<TeacherD
 
   let markedBatchesCount = 0
   if (batchIds.length > 0) {
-    const { data: attData } = await supabase
+    const { data: attData, error: attErr } = await supabase
       .from("attendance")
       .select("batch_id")
       .in("batch_id", batchIds)
       .eq("date", todayStr)
 
+    if (attErr) throw attErr
     const markedBatchIds = new Set((attData || []).map((a: any) => a.batch_id))
     markedBatchesCount = markedBatchIds.size
   }
 
   // Fetch announcements for teachers or batches
-  const { data: annData } = await supabase
+  const { data: annData, error: annErr } = await supabase
     .from("announcements")
     .select(`
       *,
@@ -130,6 +131,8 @@ export async function fetchTeacherDashboard(profileId: string): Promise<TeacherD
     .or(`target_audience.in.(all,teachers)${batchIds.length ? `,target_batch_id.in.(${batchIds.join(",")})` : ""}`)
     .order("created_at", { ascending: false })
     .limit(5)
+
+  if (annErr) throw annErr
 
   return {
     teacher,
