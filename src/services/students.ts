@@ -174,34 +174,75 @@ export async function createStudent(data: StudentFormData) {
     throw new Error("Unable to obtain profile ID for the new student.")
   }
 
-  // 2. Insert into students table
-  const { data: newStudent, error: studentError } = await supabase
+  // 2. Insert or update in students table
+  let studentRec: any = null
+  const { data: existingStudent } = await supabase
     .from("students")
-    .insert({
-      profile_id: profileId,
-      date_of_birth: data.date_of_birth || null,
-      gender: data.gender || null,
-      guardian_name: data.guardian_name || null,
-      guardian_phone: data.guardian_phone || null,
-      address: data.address || null,
-      status: data.status || "active",
-    } as any)
-    .select()
-    .single()
+    .select("*")
+    .eq("profile_id", profileId)
+    .maybeSingle()
 
-  if (studentError) throw studentError
+  if (existingStudent) {
+    const { data: updatedStudent, error: updateErr } = await supabase
+      .from("students")
+      .update({
+        date_of_birth: data.date_of_birth || null,
+        gender: data.gender || null,
+        guardian_name: data.guardian_name || null,
+        guardian_phone: data.guardian_phone || null,
+        address: data.address || null,
+        status: data.status || "active",
+      } as any)
+      .eq("id", (existingStudent as any).id)
+      .select()
+      .single()
 
-  const studentRec = newStudent as any
+    if (updateErr) throw updateErr
+    studentRec = updatedStudent
+  } else {
+    const { data: newStudent, error: studentError } = await supabase
+      .from("students")
+      .insert({
+        profile_id: profileId,
+        date_of_birth: data.date_of_birth || null,
+        gender: data.gender || null,
+        guardian_name: data.guardian_name || null,
+        guardian_phone: data.guardian_phone || null,
+        address: data.address || null,
+        status: data.status || "active",
+      } as any)
+      .select()
+      .single()
 
-  // 3. Insert Batch Enrollments if selected
-  if (data.batch_ids && data.batch_ids.length > 0 && studentRec) {
-    const enrollmentRows = data.batch_ids.map((bId) => ({
-      student_id: studentRec.id,
-      batch_id: bId,
-      status: "active",
-    }))
+    if (studentError) throw studentError
+    studentRec = newStudent
+  }
 
-    await supabase.from("enrollments").insert(enrollmentRows as any)
+  // 3. Synchronize Batch Enrollments if batch_ids is provided
+  if (data.batch_ids && studentRec) {
+    const { error: delErr } = await supabase
+      .from("enrollments")
+      .delete()
+      .eq("student_id", studentRec.id)
+    if (delErr) {
+      console.warn("Notice deleting old enrollments:", delErr)
+    }
+
+    if (data.batch_ids.length > 0) {
+      const enrollmentRows = data.batch_ids.map((bId) => ({
+        student_id: studentRec.id,
+        batch_id: bId,
+        status: "active",
+      }))
+
+      const { error: enrollErr } = await supabase
+        .from("enrollments")
+        .insert(enrollmentRows as any)
+      if (enrollErr) {
+        console.error("Error inserting enrollments:", enrollErr)
+        throw enrollErr
+      }
+    }
   }
 
   return studentRec
@@ -214,13 +255,15 @@ export async function updateStudent(
 ) {
   // Update profile info
   if (data.full_name || data.phone !== undefined) {
-    await supabase
+    const { error: pErr } = await supabase
       .from("profiles")
       .update({
         full_name: data.full_name,
         phone: data.phone || null,
       } as any)
       .eq("id", profileId)
+
+    if (pErr) console.warn("Notice updating profile:", pErr.message)
   }
 
   // Update student table
@@ -242,7 +285,8 @@ export async function updateStudent(
 
   // If batch_ids is provided, synchronize enrollments
   if (data.batch_ids) {
-    await supabase.from("enrollments").delete().eq("student_id", id)
+    const { error: delErr } = await supabase.from("enrollments").delete().eq("student_id", id)
+    if (delErr) console.warn("Notice deleting enrollments:", delErr.message)
 
     if (data.batch_ids.length > 0) {
       const rows = data.batch_ids.map((bId) => ({
@@ -250,7 +294,11 @@ export async function updateStudent(
         batch_id: bId,
         status: "active",
       }))
-      await supabase.from("enrollments").insert(rows as any)
+      const { error: insErr } = await supabase.from("enrollments").insert(rows as any)
+      if (insErr) {
+        console.error("Error inserting new enrollments:", insErr)
+        throw insErr
+      }
     }
   }
 

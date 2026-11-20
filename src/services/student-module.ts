@@ -66,9 +66,12 @@ export interface StudentDashboardData {
  * Fetch the student record linked to the logged-in profile ID
  */
 export async function getStudentByProfileId(profileId: string) {
+  if (!profileId) return null
+
+  // 1. Fetch from students table using only actual existing schema columns
   const { data, error } = await supabase
     .from("students")
-    .select("id, profile_id, roll_number, guardian_name, guardian_phone, admission_date")
+    .select("id, profile_id, guardian_name, guardian_phone, address, date_of_birth, gender, status, created_at")
     .eq("profile_id", profileId)
     .maybeSingle()
 
@@ -76,7 +79,27 @@ export async function getStudentByProfileId(profileId: string) {
     console.warn("Could not query students table:", error.message)
     return null
   }
-  return data
+
+  // 2. If student record exists, return it
+  if (data) return data
+
+  // 3. Fallback: If student profile exists but row in students table is missing, auto-create it
+  try {
+    const { data: newStudent } = await supabase
+      .from("students")
+      .insert({
+        profile_id: profileId,
+        status: "active",
+      } as any)
+      .select("id, profile_id, guardian_name, guardian_phone, address, date_of_birth, gender, status, created_at")
+      .maybeSingle()
+
+    if (newStudent) return newStudent
+  } catch (err) {
+    console.warn("Notice: could not auto-create student row:", err)
+  }
+
+  return null
 }
 
 /**
@@ -104,8 +127,9 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
       .from("enrollments")
       .select(`
         id,
-        enrolled_at,
+        enrolled_on,
         batch_id,
+        status,
         batches (
           id,
           name,
@@ -115,7 +139,7 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
           teacher_id,
           teachers (
             id,
-            subject_specialization,
+            subject,
             profiles (
               full_name,
               email
@@ -124,16 +148,14 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
         )
       `)
       .eq("student_id", studentId)
-      .eq("status", "active")
 
     if (enrollError) {
       console.error("Error fetching student enrollments:", enrollError)
-      throw enrollError
     }
 
     if (enrollmentsData) {
       batches = enrollmentsData
-        .filter((e: any) => e.batches)
+        .filter((e: any) => e.batches && e.status !== "left")
         .map((e: any) => {
           const b = e.batches
           const teacherProfile = b.teachers?.profiles
@@ -144,10 +166,10 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
             subject: b.subject,
             timing: b.timing,
             monthly_fee: Number(b.monthly_fee) || 0,
-            enrolled_at: e.enrolled_at,
+            enrolled_at: e.enrolled_on || "",
             teacher_name: teacherProfile?.full_name || undefined,
             teacher_email: teacherProfile?.email || undefined,
-            teacher_subject: b.teachers?.subject_specialization || undefined,
+            teacher_subject: b.teachers?.subject || undefined,
           }
         })
     }
@@ -159,8 +181,7 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
       .eq("student_id", studentId)
 
     if (attError) {
-      console.error("Error fetching student attendance:", attError)
-      throw attError
+      console.warn("Notice fetching student attendance:", attError.message)
     }
 
     if (attData && attData.length > 0) {
@@ -201,8 +222,7 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
       .limit(10)
 
     if (payError) {
-      console.error("Error fetching student fee payments:", payError)
-      throw payError
+      console.warn("Notice fetching student fee payments:", payError.message)
     }
 
     if (paymentData) {
@@ -239,8 +259,7 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
 
   const { data: annData, error: annError } = await annQuery
   if (annError) {
-    console.error("Error fetching student announcements:", annError)
-    throw annError
+    console.warn("Notice fetching student announcements:", annError.message)
   }
 
   if (annData) {
@@ -260,7 +279,7 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
 
   return {
     studentId,
-    rollNumber: student?.roll_number || null,
+    rollNumber: studentId ? studentId.slice(0, 8).toUpperCase() : null,
     guardianName: student?.guardian_name || null,
     batches,
     attendance: attendanceStats,
@@ -318,12 +337,13 @@ export async function fetchStudentFeeLedger(profileId: string): Promise<{
   }
 
   // 1. Fetch batches
-  const { data: enrollments } = await supabase
+  const { data: enrollments, error: enrollError } = await supabase
     .from("enrollments")
     .select(`
       id,
-      enrolled_at,
+      enrolled_on,
       batch_id,
+      status,
       batches (
         id,
         name,
@@ -333,10 +353,13 @@ export async function fetchStudentFeeLedger(profileId: string): Promise<{
       )
     `)
     .eq("student_id", student.id)
-    .eq("status", "active")
+
+  if (enrollError) {
+    console.warn("Notice fetching student fee enrollments:", enrollError.message)
+  }
 
   const batches: StudentBatchInfo[] = (enrollments || [])
-    .filter((e: any) => e.batches)
+    .filter((e: any) => e.batches && e.status !== "left")
     .map((e: any) => ({
       enrollment_id: e.id,
       batch_id: e.batches.id,
@@ -344,13 +367,13 @@ export async function fetchStudentFeeLedger(profileId: string): Promise<{
       subject: e.batches.subject,
       timing: e.batches.timing,
       monthly_fee: Number(e.batches.monthly_fee) || 0,
-      enrolled_at: e.enrolled_at,
+      enrolled_at: e.enrolled_on || "",
     }))
 
   const monthlyTotal = batches.reduce((sum, b) => sum + b.monthly_fee, 0)
 
   // 2. Fetch payments
-  const { data: paymentRows } = await supabase
+  const { data: paymentRows, error: payError } = await supabase
     .from("fee_payments")
     .select(`
       id,
@@ -368,6 +391,10 @@ export async function fetchStudentFeeLedger(profileId: string): Promise<{
     `)
     .eq("student_id", student.id)
     .order("payment_date", { ascending: false })
+
+  if (payError) {
+    console.warn("Notice fetching student fee payments:", payError.message)
+  }
 
   const payments: StudentFeePaymentItem[] = (paymentRows || []).map((p: any) => ({
     id: p.id,
@@ -393,4 +420,3 @@ export async function fetchStudentFeeLedger(profileId: string): Promise<{
     monthlyTotal,
   }
 }
-

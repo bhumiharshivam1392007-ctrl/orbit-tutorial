@@ -119,7 +119,7 @@ export function StudentDashboardPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/student/batch")}
+              onClick={() => navigate("/student/batches")}
               className="text-xs text-indigo-600 dark:text-indigo-400 gap-1"
             >
               <span>View All</span>
