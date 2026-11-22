@@ -56,7 +56,7 @@ export function TeacherDashboardPage() {
     todayAttendanceStats.markedBatches >= todayAttendanceStats.totalBatches
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full min-w-0">
       <PageHeader
         title={`Welcome, ${profile?.full_name?.split(" ")[0] || "Faculty"}! 👨‍🏫`}
         description={
@@ -70,17 +70,27 @@ export function TeacherDashboardPage() {
           </Badge>
         }
       >
-        <Button
-          onClick={() => navigate("/teacher/attendance")}
-          className="gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 shadow-md"
-        >
-          <CheckCircle2 className="h-4 w-4" />
-          <span>Mark Daily Attendance</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <Button
+            onClick={() => navigate("/teacher/schedule")}
+            variant="outline"
+            className="w-full sm:w-auto gap-2 text-xs sm:text-sm"
+          >
+            <Clock className="h-4 w-4 text-indigo-500" />
+            <span>My Timetable</span>
+          </Button>
+          <Button
+            onClick={() => navigate("/teacher/attendance")}
+            className="w-full sm:w-auto gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 shadow-md text-xs sm:text-sm"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Mark Daily Attendance</span>
+          </Button>
+        </div>
       </PageHeader>
 
       {/* Metric Cards */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3 w-full max-w-full min-w-0">
         <div onClick={() => navigate("/teacher/batches")} className="cursor-pointer">
           <StatCard
             title="Assigned Batches"
@@ -91,7 +101,7 @@ export function TeacherDashboardPage() {
           />
         </div>
 
-        <div onClick={() => navigate("/teacher/batches")} className="cursor-pointer">
+        <div onClick={() => navigate("/teacher/students")} className="cursor-pointer">
           <StatCard
             title="Total Students"
             value={totalStudents}
@@ -116,9 +126,9 @@ export function TeacherDashboardPage() {
       </div>
 
       {/* Main Grid: My Batches Schedule + Announcements */}
-      <div className="grid gap-6 lg:grid-cols-7">
+      <div className="grid gap-6 lg:grid-cols-7 w-full max-w-full min-w-0">
         {/* Batches Schedule (4 cols) */}
-        <Card className="lg:col-span-4">
+        <Card className="lg:col-span-4 w-full max-w-full min-w-0 overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
               <CardTitle className="text-base font-bold">My Batches & Lectures</CardTitle>
@@ -137,16 +147,16 @@ export function TeacherDashboardPage() {
             </Button>
           </CardHeader>
 
-          <CardContent className="space-y-3 pt-0">
+          <CardContent className="space-y-3 pt-0 w-full max-w-full min-w-0">
             {batches.length > 0 ? (
               batches.map((batch) => (
                 <div
                   key={batch.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-border/60 bg-muted/20 hover:border-indigo-500/30 transition-all"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-border/60 bg-muted/20 hover:border-indigo-500/30 transition-all w-full max-w-full min-w-0"
                 >
-                  <div className="space-y-1.5 flex-1 pr-3">
+                  <div className="space-y-1.5 flex-1 pr-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-sm text-foreground">
+                      <span className="font-bold text-sm text-foreground truncate">
                         {batch.name}
                       </span>
                       {batch.teacher_subjects && batch.teacher_subjects.length > 0 ? (
@@ -161,20 +171,20 @@ export function TeacherDashboardPage() {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground min-w-0">
+                      <span className="flex items-center gap-1 min-w-0">
                         <Clock className="h-3 w-3 text-indigo-500 shrink-0" />
-                        <span>{batch.schedule_summary || batch.timing}</span>
+                        <span className="truncate">{batch.schedule_summary || batch.timing}</span>
                       </span>
                       <span>•</span>
-                      <span>{batch.student_count} Students Enrolled</span>
+                      <span className="shrink-0">{batch.student_count} Students Enrolled</span>
                     </div>
                   </div>
 
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 gap-1.5 text-xs self-start sm:self-auto hover:border-indigo-400 hover:text-indigo-600"
+                    className="h-8 gap-1.5 text-xs w-full sm:w-auto shrink-0 hover:border-indigo-400 hover:text-indigo-600"
                     onClick={() => navigate(`/teacher/attendance?batchId=${batch.id}`)}
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -194,11 +204,12 @@ export function TeacherDashboardPage() {
         </Card>
 
         {/* Notices & Announcements (3 cols) */}
-        <Card className="lg:col-span-3 flex flex-col justify-between">
+        <Card className="lg:col-span-3 flex flex-col justify-between w-full max-w-full min-w-0 overflow-hidden">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Bell className="h-4 w-4 text-indigo-500" /> Institute Notices
+                <Bell className="h-4 w-4 text-indigo-500 shrink-0" />
+                <span>Institute Notices</span>
               </CardTitle>
               <Button
                 variant="ghost"
@@ -214,22 +225,22 @@ export function TeacherDashboardPage() {
             </p>
           </CardHeader>
 
-          <CardContent className="space-y-3 pt-0">
+          <CardContent className="space-y-3 pt-0 w-full max-w-full min-w-0">
             {recentAnnouncements.length > 0 ? (
               recentAnnouncements.slice(0, 3).map((notice) => (
                 <div
                   key={notice.id}
-                  className="p-3.5 rounded-xl border border-border/50 bg-card space-y-1.5"
+                  className="p-3.5 rounded-xl border border-border/50 bg-card space-y-1.5 w-full max-w-full min-w-0"
                 >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-foreground truncate max-w-[180px]">
+                  <div className="flex items-center justify-between text-xs gap-2">
+                    <span className="font-semibold text-foreground truncate flex-1">
                       {notice.title}
                     </span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground shrink-0">
                       {formatDate(notice.created_at)}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed break-words">
                     {notice.content}
                   </p>
                 </div>
@@ -245,7 +256,7 @@ export function TeacherDashboardPage() {
               onClick={() => navigate("/teacher/announcements")}
               className="w-full text-xs h-9 gap-1.5 mt-2"
             >
-              <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+              <Sparkles className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
               <span>Broadcast Notice to My Students</span>
             </Button>
           </CardContent>

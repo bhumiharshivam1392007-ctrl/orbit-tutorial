@@ -98,7 +98,7 @@ export function TeacherAnnouncementsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full min-w-0">
       <PageHeader
         title="Notice Board & Class Updates"
         description="Broadcast homework, test dates, and syllabus announcements directly to your students."
@@ -111,16 +111,16 @@ export function TeacherAnnouncementsPage() {
         <Button
           onClick={() => setModalOpen(true)}
           disabled={batches.length === 0}
-          className="gap-2 bg-gradient-to-r from-indigo-600 to-violet-600"
+          className="w-full sm:w-auto gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-xs sm:text-sm shrink-0"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4 shrink-0" />
           <span>Post Notice to Batch</span>
         </Button>
       </PageHeader>
 
       {/* Notices Feed */}
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full max-w-full min-w-0">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
@@ -129,29 +129,29 @@ export function TeacherAnnouncementsPage() {
           ))}
         </div>
       ) : notices.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full max-w-full min-w-0">
           {notices.map((notice) => (
             <Card
               key={notice.id}
-              className="p-6 transition-all hover:shadow-md hover:border-indigo-500/30"
+              className="p-4 sm:p-6 transition-all hover:shadow-md hover:border-indigo-500/30 w-full max-w-full min-w-0 overflow-hidden"
             >
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
+              <div className="space-y-2 w-full max-w-full min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
                   {getAudienceBadge(notice.target_audience, notice.target_batch_id)}
                   <span className="text-xs text-muted-foreground">
                     {formatDate(notice.created_at)}
                   </span>
                 </div>
 
-                <h3 className="text-lg font-bold text-foreground">
+                <h3 className="text-base sm:text-lg font-bold text-foreground break-words">
                   {notice.title}
                 </h3>
 
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed break-words">
                   {notice.content}
                 </p>
 
-                <p className="text-[11px] text-muted-foreground/80 pt-2">
+                <p className="text-[11px] text-muted-foreground/80 pt-2 border-t border-border/30">
                   Author: <span className="font-semibold text-foreground">{notice.profiles?.full_name || "Faculty Member"}</span>
                 </p>
               </div>

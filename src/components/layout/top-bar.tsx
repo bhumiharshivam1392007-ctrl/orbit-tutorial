@@ -1,4 +1,5 @@
-import { Sun, Moon, LogOut, Menu, Shield } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { Sun, Moon, LogOut, Menu, Shield, UserCheck } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useTheme } from "@/providers/theme-provider"
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,7 @@ interface TopBarProps {
 }
 
 export function TopBar({ onOpenMobileNav }: TopBarProps) {
+  const navigate = useNavigate()
   const { profile, role, signOut } = useAuth()
   const { setTheme, isDark } = useTheme()
 
@@ -118,6 +120,16 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
                 </Badge>
               </div>
             </div>
+
+            {role === "teacher" && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/teacher/profile")} className="cursor-pointer">
+                  <UserCheck className="mr-2 h-4 w-4 text-indigo-500" />
+                  <span>Faculty Profile</span>
+                </DropdownMenuItem>
+              </>
+            )}
 
             <DropdownMenuSeparator />
 

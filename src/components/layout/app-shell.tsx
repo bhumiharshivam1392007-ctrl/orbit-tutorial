@@ -23,10 +23,10 @@ export function AppShell() {
       />
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0 w-full max-w-full">
         <TopBar onOpenMobileNav={() => setMobileNavOpen(true)} />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8">
-          <div className="mx-auto max-w-7xl w-full">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8 w-full max-w-full min-w-0">
+          <div className="mx-auto max-w-7xl w-full max-w-full min-w-0">
             <Outlet />
           </div>
         </main>

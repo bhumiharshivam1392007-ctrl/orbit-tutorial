@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   CreditCard,
   BookOpen,
+  Calendar,
+  UserCheck,
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
@@ -33,8 +35,11 @@ const roleNavItems: Record<UserRole, Array<{ label: string; href: string; icon: 
   teacher: [
     { label: "Dashboard", href: "/teacher", icon: LayoutDashboard },
     { label: "My Batches", href: "/teacher/batches", icon: Layers },
+    { label: "My Students", href: "/teacher/students", icon: Users2 },
+    { label: "Timetable", href: "/teacher/schedule", icon: Calendar },
     { label: "Attendance", href: "/teacher/attendance", icon: CheckCircle2 },
     { label: "Announcements", href: "/teacher/announcements", icon: Bell },
+    { label: "My Profile", href: "/teacher/profile", icon: UserCheck },
   ],
   student: [
     { label: "Dashboard", href: "/student", icon: LayoutDashboard },

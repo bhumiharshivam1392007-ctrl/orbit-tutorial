@@ -19,8 +19,11 @@ import { AnnouncementsPage } from "@/pages/admin/announcements/index"
 // Teacher pages
 import { TeacherDashboardPage } from "@/pages/teacher/dashboard"
 import { TeacherBatchesPage } from "@/pages/teacher/batches"
+import { TeacherStudentsPage } from "@/pages/teacher/students"
+import { TeacherSchedulePage } from "@/pages/teacher/schedule"
 import { TeacherAttendancePage } from "@/pages/teacher/attendance"
 import { TeacherAnnouncementsPage } from "@/pages/teacher/announcements"
+import { TeacherProfilePage } from "@/pages/teacher/profile"
 
 // Student pages
 import { StudentDashboardPage } from "@/pages/student/dashboard"
@@ -100,8 +103,11 @@ export default function App() {
               >
                 <Route index element={<TeacherDashboardPage />} />
                 <Route path="batches" element={<TeacherBatchesPage />} />
+                <Route path="students" element={<TeacherStudentsPage />} />
+                <Route path="schedule" element={<TeacherSchedulePage />} />
                 <Route path="attendance" element={<TeacherAttendancePage />} />
                 <Route path="announcements" element={<TeacherAnnouncementsPage />} />
+                <Route path="profile" element={<TeacherProfilePage />} />
               </Route>
 
               {/* Student Routes */}

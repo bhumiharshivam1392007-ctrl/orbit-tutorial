@@ -348,3 +348,267 @@ export async function postTeacherAnnouncement(
   if (error) throw error
   return data
 }
+
+// 7. Types and function for All Students across Teacher's Batches
+export interface TeacherStudentItem {
+  id: string
+  profile_id: string
+  full_name: string
+  email: string
+  phone: string | null
+  guardian_name: string | null
+  guardian_phone: string | null
+  batch_id: string
+  batch_name: string
+  enrolled_on: string
+  attendanceRate: number
+  totalDays: number
+  presentDays: number
+}
+
+export async function fetchTeacherAllStudents(profileId: string): Promise<{
+  students: TeacherStudentItem[]
+  batches: Array<{ id: string; name: string }>
+}> {
+  const teacher = await getTeacherByProfileId(profileId)
+  if (!teacher) return { students: [], batches: [] }
+
+  // 1. Get batch IDs where teacher teaches
+  const { data: subData } = await supabase
+    .from("batch_subjects")
+    .select("batch_id, batches(id, name)")
+    .eq("teacher_id", teacher.id)
+
+  const { data: legacyBatches } = await supabase
+    .from("batches")
+    .select("id, name")
+    .eq("teacher_id", teacher.id)
+
+  const batchMap = new Map<string, string>()
+  for (const item of (subData || []) as any[]) {
+    if (item.batches?.id) {
+      batchMap.set(item.batches.id, item.batches.name)
+    }
+  }
+  for (const b of (legacyBatches || []) as any[]) {
+    if (b.id) {
+      batchMap.set(b.id, b.name)
+    }
+  }
+
+  const batchIds = Array.from(batchMap.keys())
+  if (batchIds.length === 0) {
+    return { students: [], batches: [] }
+  }
+
+  // 2. Fetch all enrollments for these batches
+  const { data: enrollments, error } = await supabase
+    .from("enrollments")
+    .select(`
+      batch_id,
+      enrolled_on,
+      status,
+      students (
+        id,
+        profile_id,
+        guardian_name,
+        guardian_phone,
+        profiles (
+          full_name,
+          email,
+          phone
+        ),
+        attendance (
+          id,
+          batch_id,
+          status
+        )
+      )
+    `)
+    .in("batch_id", batchIds)
+    .eq("status", "active")
+
+  if (error) throw error
+
+  const studentsList: TeacherStudentItem[] = (enrollments || []).map((e: any) => {
+    const s = e.students
+    const bName = batchMap.get(e.batch_id) || "Assigned Batch"
+    const attList = (s?.attendance || []).filter((a: any) => a.batch_id === e.batch_id)
+    const totalDays = attList.length
+    const presentDays = attList.filter((a: any) => a.status === "present").length
+    const rate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100
+
+    return {
+      id: s?.id || "",
+      profile_id: s?.profile_id || "",
+      full_name: s?.profiles?.full_name || "Student",
+      email: s?.profiles?.email || "",
+      phone: s?.profiles?.phone || null,
+      guardian_name: s?.guardian_name || null,
+      guardian_phone: s?.guardian_phone || null,
+      batch_id: e.batch_id,
+      batch_name: bName,
+      enrolled_on: e.enrolled_on,
+      attendanceRate: rate,
+      totalDays,
+      presentDays,
+    }
+  })
+
+  return {
+    students: studentsList,
+    batches: Array.from(batchMap.entries()).map(([id, name]) => ({ id, name })),
+  }
+}
+
+// 8. Weekly Lecture Schedule for Teacher
+export interface TeacherScheduleSlot {
+  id: string
+  batch_id: string
+  batch_name: string
+  subject: string
+  days: string
+  start_time: string | null
+  end_time: string | null
+  student_count: number
+  timeFormatted: string
+  dayList: string[]
+}
+
+export async function fetchTeacherWeeklySchedule(profileId: string): Promise<TeacherScheduleSlot[]> {
+  const teacher = await getTeacherByProfileId(profileId)
+  if (!teacher) return []
+
+  const { data: subData } = await supabase
+    .from("batch_subjects")
+    .select(`
+      id,
+      batch_id,
+      subject,
+      days,
+      start_time,
+      end_time,
+      batches (
+        id,
+        name,
+        enrollments ( id, status )
+      )
+    `)
+    .eq("teacher_id", teacher.id)
+
+  const slots: TeacherScheduleSlot[] = []
+
+  const parseDays = (rawDays: string): string[] => {
+    const d = rawDays.toLowerCase().trim()
+    if (d.includes("mon-fri") || d.includes("mon to fri")) {
+      return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    }
+    if (d.includes("mon-sat") || d.includes("mon to sat") || d.includes("daily")) {
+      return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    }
+    const days: string[] = []
+    if (d.includes("mon")) days.push("Monday")
+    if (d.includes("tue")) days.push("Tuesday")
+    if (d.includes("wed")) days.push("Wednesday")
+    if (d.includes("thu")) days.push("Thursday")
+    if (d.includes("fri")) days.push("Friday")
+    if (d.includes("sat")) days.push("Saturday")
+    if (d.includes("sun")) days.push("Sunday")
+    return days.length > 0 ? days : ["Monday", "Wednesday", "Friday"]
+  }
+
+  for (const item of (subData || []) as any[]) {
+    if (!item.batches) continue
+    const activeEnr = (item.batches.enrollments || []).filter((e: any) => e.status === "active")
+    const startTime = item.start_time ? item.start_time.slice(0, 5) : ""
+    const endTime = item.end_time ? item.end_time.slice(0, 5) : ""
+    const timeFormatted = startTime && endTime ? `${startTime} – ${endTime}` : item.days || "Scheduled"
+
+    slots.push({
+      id: item.id,
+      batch_id: item.batch_id,
+      batch_name: item.batches.name,
+      subject: item.subject,
+      days: item.days || "Mon-Fri",
+      start_time: item.start_time,
+      end_time: item.end_time,
+      student_count: activeEnr.length,
+      timeFormatted,
+      dayList: parseDays(item.days || "Mon-Fri"),
+    })
+  }
+
+  return slots
+}
+
+// 9. Fetch Teacher Full Profile
+export interface TeacherFullProfile {
+  id: string
+  profile_id: string
+  full_name: string
+  email: string
+  phone: string | null
+  subject: string | null
+  qualification: string | null
+  salary: number | null
+  assigned_batch_count: number
+  created_at?: string
+}
+
+export async function fetchTeacherProfile(profileId: string): Promise<TeacherFullProfile | null> {
+  const { data: teacher, error } = await supabase
+    .from("teachers")
+    .select("*, profiles (*)")
+    .eq("profile_id", profileId)
+    .maybeSingle()
+
+  if (error || !teacher) return null
+
+  // Count assigned batches
+  const { data: subData } = await supabase
+    .from("batch_subjects")
+    .select("batch_id")
+    .eq("teacher_id", teacher.id)
+
+  const { data: legacyBatches } = await supabase
+    .from("batches")
+    .select("id")
+    .eq("teacher_id", teacher.id)
+
+  const uniqueBatches = new Set<string>()
+  for (const item of subData || []) {
+    if (item.batch_id) uniqueBatches.add(item.batch_id)
+  }
+  for (const b of legacyBatches || []) {
+    if (b.id) uniqueBatches.add(b.id)
+  }
+
+  return {
+    id: teacher.id,
+    profile_id: teacher.profile_id,
+    full_name: teacher.profiles?.full_name || "Faculty Member",
+    email: teacher.profiles?.email || "",
+    phone: teacher.profiles?.phone || null,
+    subject: teacher.subject,
+    qualification: teacher.qualification,
+    salary: teacher.salary,
+    assigned_batch_count: uniqueBatches.size,
+    created_at: teacher.created_at,
+  }
+}
+
+// 10. Update Teacher Profile
+export async function updateTeacherProfile(
+  profileId: string,
+  updates: { full_name: string; phone: string }
+) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: updates.full_name.trim(),
+      phone: updates.phone.trim() || null,
+    })
+    .eq("id", profileId)
+
+  if (error) throw error
+}
