@@ -87,16 +87,26 @@ export function TeacherBatchesPage() {
                   }`}
                 >
                   <div className="flex items-start justify-between">
-                    <div>
-                      <Badge variant="secondary" className="text-[10px] mb-1.5 font-semibold">
-                        {batch.subject}
-                      </Badge>
+                    <div className="space-y-1.5 flex-1 pr-2">
+                      <div className="flex flex-wrap gap-1">
+                        {batch.teacher_subjects && batch.teacher_subjects.length > 0 ? (
+                          batch.teacher_subjects.map((ts) => (
+                            <Badge key={ts.id} variant="secondary" className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">
+                              {ts.subject} {ts.start_time && ts.end_time ? `(${ts.start_time.slice(0, 5)}-${ts.end_time.slice(0, 5)})` : ""}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px] font-semibold">
+                            {batch.subject}
+                          </Badge>
+                        )}
+                      </div>
                       <h4 className="font-bold text-sm text-foreground">
                         {batch.name}
                       </h4>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
-                        <Clock className="h-3 w-3 text-indigo-500" />
-                        {batch.timing}
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <Clock className="h-3 w-3 text-indigo-500 shrink-0" />
+                        <span className="truncate">{batch.schedule_summary || batch.timing}</span>
                       </p>
                     </div>
 

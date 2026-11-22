@@ -2,8 +2,19 @@ import { supabase } from "@/lib/supabase"
 import { format } from "date-fns"
 import type { Batch, AttendanceStatus, AnnouncementWithAuthor } from "@/types/database"
 
+export interface TeacherSubjectSchedule {
+  id: string
+  subject: string
+  days: string
+  start_time: string | null
+  end_time: string | null
+}
+
 export interface TeacherBatchItem extends Batch {
   student_count: number
+  teacher_subjects?: TeacherSubjectSchedule[]
+  schedule_summary?: string
+  enrollments?: Array<{ id: string; student_id: string; status: string }>
 }
 
 export interface StudentRosterItem {
@@ -71,8 +82,29 @@ export async function fetchTeacherDashboard(profileId: string): Promise<TeacherD
     }
   }
 
-  // Fetch batches taught by this teacher
-  const { data: batchesData, error: batchesError } = await supabase
+  // 1. Fetch from batch_subjects where this teacher teaches
+  const { data: subData } = await supabase
+    .from("batch_subjects")
+    .select(`
+      id,
+      batch_id,
+      subject,
+      days,
+      start_time,
+      end_time,
+      batches (
+        *,
+        enrollments (
+          id,
+          student_id,
+          status
+        )
+      )
+    `)
+    .eq("teacher_id", teacher.id)
+
+  // 2. Also fetch legacy batches where batches.teacher_id = teacher.id for safety
+  const { data: legacyBatches } = await supabase
     .from("batches")
     .select(`
       *,
@@ -83,18 +115,72 @@ export async function fetchTeacherDashboard(profileId: string): Promise<TeacherD
       )
     `)
     .eq("teacher_id", teacher.id)
-    .order("name", { ascending: true })
 
-  if (batchesError) throw batchesError
+  // 3. Aggregate batches and their subjects
+  const batchMap = new Map<string, { batch: any; subjects: TeacherSubjectSchedule[] }>()
 
-  const batches: TeacherBatchItem[] = (batchesData || []).map((b: any) => ({
-    ...b,
-    student_count: (b.enrollments || []).filter((e: any) => e.status === "active").length,
-  }))
+  // Process batch_subjects
+  for (const item of (subData || []) as any[]) {
+    if (!item.batches) continue
+    const bId = item.batch_id
+    if (!batchMap.has(bId)) {
+      batchMap.set(bId, {
+        batch: item.batches,
+        subjects: [],
+      })
+    }
+    batchMap.get(bId)!.subjects.push({
+      id: item.id,
+      subject: item.subject,
+      days: item.days || "Mon-Fri",
+      start_time: item.start_time,
+      end_time: item.end_time,
+    })
+  }
 
-  // Unique students count across all batches
+  // Process legacy batches if not already in batchMap
+  for (const b of (legacyBatches || []) as any[]) {
+    if (!batchMap.has(b.id)) {
+      batchMap.set(b.id, {
+        batch: b,
+        subjects: [
+          {
+            id: `legacy-${b.id}`,
+            subject: b.subject || "General",
+            days: b.timing ? b.timing.split(" ")[0] : "Mon-Fri",
+            start_time: "09:00",
+            end_time: "10:30",
+          },
+        ],
+      })
+    }
+  }
+
+  const batches: TeacherBatchItem[] = Array.from(batchMap.values()).map(({ batch, subjects }) => {
+    const subjectsList = subjects.map((s) => s.subject).join(", ")
+    const timingList = subjects
+      .map((s) => {
+        const time = s.start_time && s.end_time ? `${s.start_time.slice(0, 5)}-${s.end_time.slice(0, 5)}` : ""
+        return `${s.subject}: ${s.days} ${time}`.trim()
+      })
+      .join(" | ")
+
+    const activeEnrollments = (batch.enrollments || []).filter((e: any) => e.status === "active")
+
+    return {
+      ...batch,
+      subject: subjectsList || batch.subject || "Class Faculty",
+      timing: timingList || batch.timing || "Scheduled",
+      student_count: activeEnrollments.length,
+      teacher_subjects: subjects,
+      schedule_summary: timingList,
+      enrollments: batch.enrollments,
+    }
+  })
+
+  // Unique students count across all assigned batches
   const studentIdSet = new Set<string>()
-  for (const b of (batchesData || []) as any[]) {
+  for (const b of batches) {
     for (const e of b.enrollments || []) {
       if (e.status === "active") studentIdSet.add(e.student_id)
     }
@@ -220,12 +306,14 @@ export async function fetchAttendanceForDate(batchId: string, dateStr: string) {
 export async function saveBatchAttendance(
   batchId: string,
   dateStr: string,
-  records: Array<{ student_id: string; status: AttendanceStatus }>,
+  records: DailyAttendanceRecord[],
   markedByProfileId?: string
 ) {
+  if (records.length === 0) return
+
   const rows = records.map((r) => ({
-    batch_id: batchId,
     student_id: r.student_id,
+    batch_id: batchId,
     date: dateStr,
     status: r.status,
     marked_by: markedByProfileId || null,
@@ -236,24 +324,23 @@ export async function saveBatchAttendance(
     .upsert(rows as any, { onConflict: "student_id,batch_id,date" })
 
   if (error) throw error
-  return true
 }
 
-// 6. Teacher creates announcement for their batch
+// 6. Post Announcement to a specific batch
 export async function postTeacherAnnouncement(
-  authorId: string,
+  authorProfileId: string,
   title: string,
   content: string,
-  batchId: string
+  targetBatchId: string
 ) {
   const { data, error } = await supabase
     .from("announcements")
     .insert({
-      author_id: authorId,
+      author_id: authorProfileId,
       title: title.trim(),
       content: content.trim(),
       target_audience: "students",
-      target_batch_id: batchId,
+      target_batch_id: targetBatchId,
     } as any)
     .select()
     .single()
@@ -261,4 +348,3 @@ export async function postTeacherAnnouncement(
   if (error) throw error
   return data
 }
-

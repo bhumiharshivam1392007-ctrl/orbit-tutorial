@@ -15,6 +15,14 @@ export interface TeacherFormData {
 
 export interface TeacherListItem extends TeacherWithProfile {
   batches: Batch[]
+  batch_subjects?: Array<{
+    id: string
+    subject: string
+    days?: string
+    start_time?: string
+    end_time?: string
+    batches?: Batch
+  }>
 }
 
 export async function fetchTeachers(): Promise<TeacherListItem[]> {
@@ -23,6 +31,14 @@ export async function fetchTeachers(): Promise<TeacherListItem[]> {
     .select(`
       *,
       profiles (*),
+      batch_subjects (
+        id,
+        subject,
+        days,
+        start_time,
+        end_time,
+        batches (*)
+      ),
       batches (*)
     `)
     .order("created_at", { ascending: false })
@@ -32,7 +48,22 @@ export async function fetchTeachers(): Promise<TeacherListItem[]> {
     throw error
   }
 
-  return (data || []) as unknown as TeacherListItem[]
+  return (data || []).map((t: any) => {
+    // Combine batches from batch_subjects and legacy batches
+    const batchMap = new Map<string, Batch>()
+    for (const bs of t.batch_subjects || []) {
+      if (bs.batches) batchMap.set(bs.batches.id, bs.batches)
+    }
+    for (const b of t.batches || []) {
+      if (b) batchMap.set(b.id, b)
+    }
+
+    return {
+      ...t,
+      batches: Array.from(batchMap.values()),
+      batch_subjects: t.batch_subjects || [],
+    }
+  }) as unknown as TeacherListItem[]
 }
 
 export async function createTeacher(data: TeacherFormData) {

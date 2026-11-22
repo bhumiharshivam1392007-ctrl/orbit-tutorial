@@ -193,15 +193,17 @@ export function StudentProfilePage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <Badge variant="secondary" className="text-[10px] mb-1.5 text-indigo-600 dark:text-indigo-400">
-                        {e.batches?.subject}
+                        {e.batches?.subject || "Active Class"}
                       </Badge>
                       <h4 className="font-bold text-base text-foreground">
                         {e.batches?.name}
                       </h4>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
-                        <Clock className="h-3 w-3 text-indigo-500" />
-                        {e.batches?.timing}
-                      </p>
+                      {e.batches?.timing && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                          <Clock className="h-3 w-3 text-indigo-500" />
+                          {e.batches.timing}
+                        </p>
+                      )}
                     </div>
 
                     <span className="font-bold text-sm text-foreground">

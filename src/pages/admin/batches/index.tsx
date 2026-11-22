@@ -4,8 +4,6 @@ import {
   Layers,
   Plus,
   Search,
-  Clock,
-  User,
   GraduationCap,
   IndianRupee,
   MoreVertical,
@@ -29,14 +27,14 @@ import { fetchBatches, deleteBatch } from "@/services/batches"
 import { BatchModal } from "@/pages/admin/batches/batch-modal"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "sonner"
-import type { Batch } from "@/types/database"
+import type { BatchWithSubjects } from "@/types/database"
 
 export function BatchesListPage() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState("")
   const [modalOpen, setModalOpen] = useState(false)
-  const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Batch | null>(null)
+  const [editingBatch, setEditingBatch] = useState<BatchWithSubjects | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<BatchWithSubjects | null>(null)
 
   const { data: batches, isLoading } = useQuery({
     queryKey: ["batches"],
@@ -58,11 +56,14 @@ export function BatchesListPage() {
 
   const filteredBatches = (batches || []).filter((b) => {
     const q = search.toLowerCase()
-    return (
-      b.name.toLowerCase().includes(q) ||
-      b.subject.toLowerCase().includes(q) ||
-      (b.teachers?.profiles?.full_name || "").toLowerCase().includes(q)
+    const nameMatch = b.name.toLowerCase().includes(q)
+    const legacyMatch = (b.subject || "").toLowerCase().includes(q) || (b.teachers?.profiles?.full_name || "").toLowerCase().includes(q)
+    const subjectsMatch = (b.batch_subjects || []).some(
+      (s) =>
+        s.subject.toLowerCase().includes(q) ||
+        (s.teachers?.profiles?.full_name || "").toLowerCase().includes(q)
     )
+    return nameMatch || legacyMatch || subjectsMatch
   })
 
   return (
@@ -121,9 +122,21 @@ export function BatchesListPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1">
-                    <Badge variant="secondary" className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50">
-                      {batch.subject}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50">
+                        {batch.batch_subjects?.length || 1} Subjects
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={
+                          batch.status === "active"
+                            ? "text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/30"
+                            : "text-[10px] text-muted-foreground"
+                        }
+                      >
+                        {batch.status === "active" ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
                     <CardTitle className="text-lg font-bold group-hover:text-indigo-600 transition-colors">
                       {batch.name}
                     </CardTitle>
@@ -138,14 +151,14 @@ export function BatchesListPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
                         onClick={() => {
-                          setEditingBatch(batch as any)
+                          setEditingBatch(batch)
                           setModalOpen(true)
                         }}
                       >
                         <Edit2 className="mr-2 h-4 w-4" /> Edit Details
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => setDeleteTarget(batch as any)}
+                        onClick={() => setDeleteTarget(batch)}
                         className="text-destructive focus:text-destructive"
                       >
                         <Trash2 className="mr-2 h-4 w-4" /> Delete Batch
@@ -156,22 +169,39 @@ export function BatchesListPage() {
               </CardHeader>
 
               <CardContent className="space-y-3 pt-0">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
-                  <span className="truncate">{batch.timing}</span>
-                </div>
+                {/* Subject & Faculty Timetable Chips */}
+                <div className="space-y-1.5 min-h-[50px]">
+                  {batch.batch_subjects && batch.batch_subjects.length > 0 ? (
+                    batch.batch_subjects.map((sub) => {
+                      const teacherName = sub.teachers?.profiles?.full_name || "No teacher assigned"
+                      const timingText =
+                        sub.start_time && sub.end_time
+                          ? `${sub.days || "Mon-Fri"} ${sub.start_time.slice(0, 5)} - ${sub.end_time.slice(0, 5)}`
+                          : sub.days || "Schedule unset"
 
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <User className="h-3.5 w-3.5 text-violet-500 shrink-0" />
-                  <span className="truncate">
-                    {batch.teachers?.profiles?.full_name ? (
-                      <span className="font-medium text-foreground">
-                        {batch.teachers.profiles.full_name}
-                      </span>
-                    ) : (
-                      <span className="italic text-muted-foreground/80">Unassigned</span>
-                    )}
-                  </span>
+                      return (
+                        <div
+                          key={sub.id}
+                          className="flex items-center justify-between gap-2 p-2 rounded-lg bg-muted/40 border border-border/50 text-xs"
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="font-semibold text-foreground truncate">{sub.subject}</span>
+                            <span className="text-[11px] text-muted-foreground truncate">
+                              • {teacherName}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium shrink-0 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded">
+                            {timingText}
+                          </span>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
+                      <span>{batch.subject || "General"}</span>
+                      {batch.timing && <span>• {batch.timing}</span>}
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs">
@@ -182,7 +212,7 @@ export function BatchesListPage() {
 
                   <div className="flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 text-indigo-600 dark:text-indigo-400 font-medium">
                     <GraduationCap className="h-3 w-3" />
-                    <span>{batch.student_count} Enrolled</span>
+                    <span>{batch.student_count || 0} Enrolled</span>
                   </div>
                 </div>
               </CardContent>

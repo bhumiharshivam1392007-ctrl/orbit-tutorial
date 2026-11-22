@@ -1,6 +1,15 @@
 import { supabase } from "@/lib/supabase"
 import type { AttendanceStatus, PaymentMode } from "@/types/database"
 
+export interface StudentSubjectItem {
+  id: string
+  subject: string
+  teacher_name?: string
+  teacher_email?: string
+  days: string
+  timing: string
+}
+
 export interface StudentBatchInfo {
   enrollment_id: string
   batch_id: string
@@ -12,6 +21,7 @@ export interface StudentBatchInfo {
   teacher_name?: string
   teacher_email?: string
   teacher_subject?: string
+  subjects?: StudentSubjectItem[]
 }
 
 export interface StudentFeePaymentItem {
@@ -137,6 +147,22 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
           timing,
           monthly_fee,
           teacher_id,
+          batch_subjects (
+            id,
+            subject,
+            teacher_id,
+            days,
+            start_time,
+            end_time,
+            teachers (
+              id,
+              subject,
+              profiles (
+                full_name,
+                email
+              )
+            )
+          ),
           teachers (
             id,
             subject,
@@ -159,17 +185,33 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
         .map((e: any) => {
           const b = e.batches
           const teacherProfile = b.teachers?.profiles
+          const subsList: StudentSubjectItem[] = (b.batch_subjects || []).map((bs: any) => {
+            const time = bs.start_time && bs.end_time ? `${bs.start_time.slice(0, 5)} - ${bs.end_time.slice(0, 5)}` : (bs.days || "Scheduled")
+            return {
+              id: bs.id,
+              subject: bs.subject,
+              teacher_name: bs.teachers?.profiles?.full_name || undefined,
+              teacher_email: bs.teachers?.profiles?.email || undefined,
+              days: bs.days || "Mon-Fri",
+              timing: time,
+            }
+          })
+
+          const subjectsSummary = subsList.length > 0 ? subsList.map((s) => s.subject).join(", ") : b.subject
+          const timingSummary = subsList.length > 0 ? subsList.map((s) => `${s.subject}: ${s.days} ${s.timing}`).join(" | ") : b.timing
+
           return {
             enrollment_id: e.id,
             batch_id: b.id,
             batch_name: b.name,
-            subject: b.subject,
-            timing: b.timing,
+            subject: subjectsSummary || "All Core Subjects",
+            timing: timingSummary || "Scheduled",
             monthly_fee: Number(b.monthly_fee) || 0,
             enrolled_at: e.enrolled_on || "",
             teacher_name: teacherProfile?.full_name || undefined,
             teacher_email: teacherProfile?.email || undefined,
             teacher_subject: b.teachers?.subject || undefined,
+            subjects: subsList,
           }
         })
     }
@@ -364,8 +406,8 @@ export async function fetchStudentFeeLedger(profileId: string): Promise<{
       enrollment_id: e.id,
       batch_id: e.batches.id,
       batch_name: e.batches.name,
-      subject: e.batches.subject,
-      timing: e.batches.timing,
+      subject: e.batches.subject || "All Core Subjects",
+      timing: e.batches.timing || "Class Timetable",
       monthly_fee: Number(e.batches.monthly_fee) || 0,
       enrolled_at: e.enrolled_on || "",
     }))

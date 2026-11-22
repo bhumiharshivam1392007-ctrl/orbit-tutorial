@@ -52,12 +52,24 @@ export interface Teacher {
 export interface Batch {
   id: string
   name: string
-  subject: string
-  timing: string
-  teacher_id: string | null
+  subject?: string | null
+  timing?: string | null
+  teacher_id?: string | null
   monthly_fee: number
   status: BatchStatus
   created_at: string
+}
+
+export interface BatchSubject {
+  id: string
+  batch_id: string
+  subject: string
+  teacher_id: string | null
+  days?: string | null
+  start_time?: string | null
+  end_time?: string | null
+  created_at?: string
+  teachers?: TeacherWithProfile | null
 }
 
 export interface Enrollment {
@@ -122,7 +134,14 @@ export interface TeacherWithProfile extends Teacher {
   profiles: Profile
 }
 
-export interface BatchWithTeacher extends Batch {
+export interface BatchWithSubjects extends Batch {
+  batch_subjects?: BatchSubject[]
+  teachers?: (Teacher & { profiles: Profile }) | null
+  enrollments?: Array<{ id: string; status: EnrollmentStatus }>
+  student_count?: number
+}
+
+export interface BatchWithTeacher extends BatchWithSubjects {
   teachers: (Teacher & { profiles: Profile }) | null
 }
 

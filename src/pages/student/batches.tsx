@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import {
   Clock,
-  User,
   GraduationCap,
   Calendar,
 } from "lucide-react"
@@ -9,10 +8,9 @@ import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/use-auth"
 import { fetchStudentDashboard } from "@/services/student-module"
-import { formatCurrency, formatDate, getInitials } from "@/lib/utils"
+import { formatCurrency, formatDate } from "@/lib/utils"
 
 export function StudentBatchesPage() {
   const { profile } = useAuth()
@@ -56,7 +54,9 @@ export function StudentBatchesPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <Badge variant="secondary" className="text-xs font-semibold mb-2">
-                    {batch.subject}
+                    {batch.subjects && batch.subjects.length > 0
+                      ? `${batch.subjects.length} Subjects Included`
+                      : batch.subject}
                   </Badge>
                   <h3 className="text-xl font-bold text-foreground">
                     {batch.batch_name}
@@ -70,38 +70,48 @@ export function StudentBatchesPage() {
                 </div>
               </div>
 
-              {/* Timing */}
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 border border-border/50 text-xs">
-                <Clock className="h-4 w-4 text-indigo-500" />
-                <span className="font-semibold text-foreground">Schedule:</span>
-                <span className="text-muted-foreground">{batch.timing}</span>
+              {/* Subjects & Faculty Timetable */}
+              <div className="space-y-2 pt-1">
+                <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-indigo-500" />
+                  <span>Subjects & Timetable</span>
+                </span>
+
+                <div className="space-y-2">
+                  {batch.subjects && batch.subjects.length > 0 ? (
+                    batch.subjects.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="p-3 rounded-xl bg-muted/40 border border-border/50 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                      >
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-foreground text-sm">{sub.subject}</span>
+                          <span className="text-muted-foreground block text-[11px]">
+                            Faculty: {sub.teacher_name || "Faculty Assigned"}
+                          </span>
+                        </div>
+                        <div className="text-right sm:text-right text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+                          <span>{sub.days} • {sub.timing}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 rounded-xl bg-muted/40 border border-border/50 text-xs flex items-center justify-between">
+                      <span className="text-muted-foreground">{batch.timing}</span>
+                      <span className="font-medium">{batch.teacher_name || "Faculty Assigned"}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Instructor Information */}
-              <div className="border-t border-border/50 pt-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 ring-2 ring-indigo-500/20">
-                    <AvatarFallback className="bg-indigo-50 text-indigo-600 font-bold dark:bg-indigo-950 dark:text-indigo-300">
-                      {batch.teacher_name ? getInitials(batch.teacher_name) : <User className="h-4 w-4" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <span className="text-[11px] text-muted-foreground block">Faculty Instructor</span>
-                    <h4 className="text-sm font-bold text-foreground">
-                      {batch.teacher_name || "Faculty Assigned"}
-                    </h4>
-                    {batch.teacher_subject && (
-                      <p className="text-xs text-muted-foreground">
-                        {batch.teacher_subject} Specialist
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-right text-[11px] text-muted-foreground flex items-center gap-1">
-                  <Calendar className="h-3 w-3 text-indigo-500" />
+              <div className="border-t border-border/50 pt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5 text-indigo-500" />
                   <span>Enrolled: {formatDate(batch.enrolled_at)}</span>
                 </div>
+                <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">
+                  Tuition Paid Monthly
+                </Badge>
               </div>
             </Card>
           ))}

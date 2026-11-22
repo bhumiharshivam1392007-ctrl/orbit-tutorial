@@ -74,11 +74,8 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
   }, [studentToEdit, open])
 
   const toggleBatch = (batchId: string) => {
-    setSelectedBatchIds((prev) =>
-      prev.includes(batchId)
-        ? prev.filter((id) => id !== batchId)
-        : [...prev, batchId]
-    )
+    // A student belongs to exactly ONE batch (their academic class)
+    setSelectedBatchIds((prev) => (prev.includes(batchId) ? [] : [batchId]))
   }
 
   const mutation = useMutation({
@@ -257,14 +254,14 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
           <div className="space-y-3 pt-2 border-t border-border/60">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                3. Enroll in Batches
+                3. Assign Academic Class (Batch)
               </h4>
-              <span className="text-xs text-muted-foreground">
-                {selectedBatchIds.length} selected
+              <span className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">
+                {selectedBatchIds.length > 0 ? "1 Class Selected" : "None Selected"}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto p-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
               {(batches || []).map((b) => {
                 const isSelected = selectedBatchIds.includes(b.id)
                 return (
@@ -274,16 +271,18 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
                     onClick={() => toggleBatch(b.id)}
                     className={`flex items-center justify-between p-2.5 rounded-xl border text-xs text-left transition-all ${
                       isSelected
-                        ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-semibold"
+                        ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-semibold ring-1 ring-indigo-500"
                         : "border-border/60 hover:bg-muted/50 text-foreground"
                     }`}
                   >
                     <div>
-                      <p className="font-semibold">{b.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{b.timing}</p>
+                      <p className="font-semibold text-sm">{b.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {b.batch_subjects?.length ? `${b.batch_subjects.length} Subjects` : "All Subjects"}
+                      </p>
                     </div>
                     <span className="text-xs font-mono font-bold">
-                      ₹{b.monthly_fee}
+                      ₹{b.monthly_fee}/mo
                     </span>
                   </button>
                 )

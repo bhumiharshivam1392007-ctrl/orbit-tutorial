@@ -144,19 +144,27 @@ export function TeacherDashboardPage() {
                   key={batch.id}
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-border/60 bg-muted/20 hover:border-indigo-500/30 transition-all"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-1.5 flex-1 pr-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-bold text-sm text-foreground">
                         {batch.name}
                       </span>
-                      <Badge variant="secondary" className="text-[10px] py-0">
-                        {batch.subject}
-                      </Badge>
+                      {batch.teacher_subjects && batch.teacher_subjects.length > 0 ? (
+                        batch.teacher_subjects.map((ts) => (
+                          <Badge key={ts.id} variant="secondary" className="text-[10px] py-0 text-indigo-600 dark:text-indigo-400">
+                            {ts.subject} {ts.start_time && ts.end_time ? `(${ts.start_time.slice(0, 5)}-${ts.end_time.slice(0, 5)})` : ""}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px] py-0">
+                          {batch.subject}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3 text-indigo-500" />
-                        {batch.timing}
+                        <Clock className="h-3 w-3 text-indigo-500 shrink-0" />
+                        <span>{batch.schedule_summary || batch.timing}</span>
                       </span>
                       <span>•</span>
                       <span>{batch.student_count} Students Enrolled</span>
