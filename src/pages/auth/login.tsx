@@ -11,8 +11,10 @@ import {
   AlertCircle,
   ArrowRight,
   ShieldCheck,
+  Download,
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { usePwa } from "@/hooks/use-pwa"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,6 +26,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { signIn, user, role } = useAuth()
+  const { isInstalled, installApp } = usePwa()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -324,6 +327,19 @@ export function LoginPage() {
           <p className="text-center text-xs text-muted-foreground">
             Role-protected access. Protected by Row Level Security (RLS).
           </p>
+
+          {!isInstalled && (
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={installApp}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-indigo-500 hover:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 transition-all border border-indigo-500/20"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Install ORBIT App on this device</span>
+              </button>
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

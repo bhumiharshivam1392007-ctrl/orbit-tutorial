@@ -16,8 +16,10 @@ import {
   Sparkles,
   Calendar,
   UserCheck,
+  Download,
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { usePwa } from "@/hooks/use-pwa"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn, getInitials } from "@/lib/utils"
@@ -63,6 +65,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { profile, role, signOut } = useAuth()
+  const { isInstalled, installApp } = usePwa()
   const items = role ? roleNavItems[role] || [] : []
 
   return (
@@ -147,6 +150,23 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           )
         })}
       </nav>
+
+      {/* Install App Link (If not already installed) */}
+      {!isInstalled && (
+        <div className="px-3 pb-2">
+          <button
+            onClick={installApp}
+            className={cn(
+              "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all border border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-500/50 shadow-sm",
+              collapsed && "justify-center px-1"
+            )}
+            title="Install ORBIT App"
+          >
+            <Download className="h-4 w-4 shrink-0" />
+            {!collapsed && <span className="truncate">Install App</span>}
+          </button>
+        </div>
+      )}
 
       {/* User Info / Logout Footer */}
       <div className="p-3 border-t border-border/40">

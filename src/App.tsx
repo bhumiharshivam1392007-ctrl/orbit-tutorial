@@ -3,6 +3,7 @@ import { Toaster } from "sonner"
 import { QueryProvider } from "@/providers/query-provider"
 import { ThemeProvider } from "@/providers/theme-provider"
 import { AuthProvider, useAuth } from "@/providers/auth-provider"
+import { PwaProvider } from "@/providers/pwa-provider"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { AppShell } from "@/components/layout/app-shell"
 import { LoginPage } from "@/pages/auth/login"
@@ -66,72 +67,74 @@ export default function App() {
     <QueryProvider>
       <ThemeProvider defaultTheme="system" storageKey="orbit-theme">
         <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Public route */}
-              <Route path="/login" element={<LoginPage />} />
+          <PwaProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Public route */}
+                <Route path="/login" element={<LoginPage />} />
 
-              {/* Root redirect */}
-              <Route path="/" element={<RootRedirect />} />
+                {/* Root redirect */}
+                <Route path="/" element={<RootRedirect />} />
 
-              {/* Admin Module Routes */}
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <AppShell />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<AdminDashboardPage />} />
-                <Route path="students" element={<StudentsListPage />} />
-                <Route path="students/:id" element={<StudentProfilePage />} />
-                <Route path="teachers" element={<TeachersListPage />} />
-                <Route path="batches" element={<BatchesListPage />} />
-                <Route path="fees" element={<FeesManagementPage />} />
-                <Route path="announcements" element={<AnnouncementsPage />} />
-              </Route>
+                {/* Admin Module Routes */}
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <AppShell />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<AdminDashboardPage />} />
+                  <Route path="students" element={<StudentsListPage />} />
+                  <Route path="students/:id" element={<StudentProfilePage />} />
+                  <Route path="teachers" element={<TeachersListPage />} />
+                  <Route path="batches" element={<BatchesListPage />} />
+                  <Route path="fees" element={<FeesManagementPage />} />
+                  <Route path="announcements" element={<AnnouncementsPage />} />
+                </Route>
 
-              {/* Teacher Module Routes */}
-              <Route
-                path="/teacher"
-                element={
-                  <ProtectedRoute allowedRoles={["teacher"]}>
-                    <AppShell />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<TeacherDashboardPage />} />
-                <Route path="batches" element={<TeacherBatchesPage />} />
-                <Route path="students" element={<TeacherStudentsPage />} />
-                <Route path="schedule" element={<TeacherSchedulePage />} />
-                <Route path="attendance" element={<TeacherAttendancePage />} />
-                <Route path="announcements" element={<TeacherAnnouncementsPage />} />
-                <Route path="profile" element={<TeacherProfilePage />} />
-              </Route>
+                {/* Teacher Module Routes */}
+                <Route
+                  path="/teacher"
+                  element={
+                    <ProtectedRoute allowedRoles={["teacher"]}>
+                      <AppShell />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<TeacherDashboardPage />} />
+                  <Route path="batches" element={<TeacherBatchesPage />} />
+                  <Route path="students" element={<TeacherStudentsPage />} />
+                  <Route path="schedule" element={<TeacherSchedulePage />} />
+                  <Route path="attendance" element={<TeacherAttendancePage />} />
+                  <Route path="announcements" element={<TeacherAnnouncementsPage />} />
+                  <Route path="profile" element={<TeacherProfilePage />} />
+                </Route>
 
-              {/* Student Routes */}
-              <Route
-                path="/student"
-                element={
-                  <ProtectedRoute allowedRoles={["student"]}>
-                    <AppShell />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<StudentDashboardPage />} />
-                <Route path="batch" element={<StudentBatchesPage />} />
-                <Route path="batches" element={<StudentBatchesPage />} />
-                <Route path="fees" element={<StudentFeesPage />} />
-                <Route path="attendance" element={<StudentAttendancePage />} />
-                <Route path="announcements" element={<StudentAnnouncementsPage />} />
-              </Route>
+                {/* Student Routes */}
+                <Route
+                  path="/student"
+                  element={
+                    <ProtectedRoute allowedRoles={["student"]}>
+                      <AppShell />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<StudentDashboardPage />} />
+                  <Route path="batch" element={<StudentBatchesPage />} />
+                  <Route path="batches" element={<StudentBatchesPage />} />
+                  <Route path="fees" element={<StudentFeesPage />} />
+                  <Route path="attendance" element={<StudentAttendancePage />} />
+                  <Route path="announcements" element={<StudentAnnouncementsPage />} />
+                </Route>
 
-              {/* 404 Catch-All */}
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </BrowserRouter>
-          <Toaster richColors position="top-right" closeButton />
+                {/* 404 Catch-All */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </BrowserRouter>
+            <Toaster richColors position="top-right" closeButton />
+          </PwaProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryProvider>

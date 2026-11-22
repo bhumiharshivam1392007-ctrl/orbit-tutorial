@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom"
-import { Sun, Moon, LogOut, Menu, Shield, UserCheck } from "lucide-react"
+import { Sun, Moon, LogOut, Menu, Shield, UserCheck, Download } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { usePwa } from "@/hooks/use-pwa"
 import { useTheme } from "@/providers/theme-provider"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -21,6 +22,7 @@ interface TopBarProps {
 export function TopBar({ onOpenMobileNav }: TopBarProps) {
   const navigate = useNavigate()
   const { profile, role, signOut } = useAuth()
+  const { isInstalled, installApp } = usePwa()
   const { setTheme, isDark } = useTheme()
 
   const toggleTheme = () => {
@@ -61,8 +63,22 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         </div>
       </div>
 
-      {/* Right side: Theme toggle + User Profile dropdown */}
+      {/* Right side: Install app + Theme toggle + User Profile dropdown */}
       <div className="flex items-center gap-2">
+        {/* Install App Button (Hidden when running inside standalone PWA) */}
+        {!isInstalled && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={installApp}
+            className="flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-xl border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-500/50 transition-all font-semibold text-xs shadow-sm"
+            title="Install ORBIT as a standalone app"
+          >
+            <Download className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden sm:inline">Install App</span>
+          </Button>
+        )}
+
         {/* Dark/Light mode toggle */}
         <Button
           variant="ghost"
@@ -127,6 +143,16 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
                 <DropdownMenuItem onClick={() => navigate("/teacher/profile")} className="cursor-pointer">
                   <UserCheck className="mr-2 h-4 w-4 text-indigo-500" />
                   <span>Faculty Profile</span>
+                </DropdownMenuItem>
+              </>
+            )}
+
+            {!isInstalled && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={installApp} className="cursor-pointer text-indigo-600 dark:text-indigo-400">
+                  <Download className="mr-2 h-4 w-4" />
+                  <span>Install App</span>
                 </DropdownMenuItem>
               </>
             )}

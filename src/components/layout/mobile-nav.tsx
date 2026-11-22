@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom"
-import { X, LogOut } from "lucide-react"
+import { X, LogOut, Download } from "lucide-react"
 import {
   LayoutDashboard,
   GraduationCap,
@@ -14,6 +14,7 @@ import {
   UserCheck,
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { usePwa } from "@/hooks/use-pwa"
 import { Button } from "@/components/ui/button"
 import { cn, getInitials } from "@/lib/utils"
 import type { UserRole } from "@/types/database"
@@ -52,6 +53,7 @@ const roleNavItems: Record<UserRole, Array<{ label: string; href: string; icon: 
 
 export function MobileNav({ open, onClose }: MobileNavProps) {
   const { profile, role, signOut } = useAuth()
+  const { isInstalled, installApp } = usePwa()
   const items = role ? roleNavItems[role] || [] : []
 
   if (!open) return null
@@ -116,6 +118,22 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
             )
           })}
         </nav>
+
+        {/* Install PWA Prompt in Mobile Drawer */}
+        {!isInstalled && (
+          <div className="px-3 pb-2 pt-1 border-t border-border/40">
+            <Button
+              onClick={() => {
+                onClose()
+                installApp()
+              }}
+              className="w-full justify-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl py-2 h-9 text-xs font-semibold shadow-md shadow-indigo-500/20"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Install ORBIT App</span>
+            </Button>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="p-3 border-t border-border/40 space-y-2">
