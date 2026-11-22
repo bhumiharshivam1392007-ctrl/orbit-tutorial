@@ -95,13 +95,13 @@ export function TeacherModal({ open, onOpenChange, teacherToEdit }: TeacherModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-lg max-h-[88vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{teacherToEdit ? "Edit Faculty Member" : "Add Faculty Member"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="t-name">Full Name *</Label>
               <Input
@@ -124,7 +124,7 @@ export function TeacherModal({ open, onOpenChange, teacherToEdit }: TeacherModal
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="t-email">Email Address *</Label>
               <Input
@@ -152,7 +152,7 @@ export function TeacherModal({ open, onOpenChange, teacherToEdit }: TeacherModal
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="t-sub">Primary Subject *</Label>
               <Input
@@ -175,7 +175,7 @@ export function TeacherModal({ open, onOpenChange, teacherToEdit }: TeacherModal
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="t-sal">Monthly Salary (₹)</Label>
               <Input

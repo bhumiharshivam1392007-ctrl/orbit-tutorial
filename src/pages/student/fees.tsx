@@ -43,10 +43,10 @@ export function StudentFeesPage() {
       />
 
       {/* Fee Metrics Cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="p-5 rounded-2xl border border-border/60 bg-card">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
+        <div className="p-4 sm:p-5 rounded-2xl border border-border/60 bg-card">
           <span className="text-xs text-muted-foreground block font-medium">Total Fees Paid</span>
-          <span className="text-2xl font-bold text-foreground mt-1 block">
+          <span className="text-xl sm:text-2xl font-bold text-foreground mt-1 block">
             {formatCurrency(totalPaid)}
           </span>
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
@@ -55,9 +55,9 @@ export function StudentFeesPage() {
           </span>
         </div>
 
-        <div className="p-5 rounded-2xl border border-border/60 bg-card">
+        <div className="p-4 sm:p-5 rounded-2xl border border-border/60 bg-card">
           <span className="text-xs text-muted-foreground block font-medium">Monthly Active Tuition</span>
-          <span className="text-2xl font-bold text-foreground mt-1 block">
+          <span className="text-xl sm:text-2xl font-bold text-foreground mt-1 block">
             {formatCurrency(monthlyTotal)}
           </span>
           <span className="text-[11px] text-muted-foreground mt-1 block">
@@ -65,9 +65,9 @@ export function StudentFeesPage() {
           </span>
         </div>
 
-        <div className="p-5 rounded-2xl border border-border/60 bg-card">
+        <div className="p-4 sm:p-5 rounded-2xl border border-border/60 bg-card">
           <span className="text-xs text-muted-foreground block font-medium">Receipts Available</span>
-          <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1 block">
+          <span className="text-xl sm:text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1 block">
             {payments.length}
           </span>
           <span className="text-[11px] text-muted-foreground mt-1 block">
@@ -92,7 +92,7 @@ export function StudentFeesPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm min-w-[560px]">
               <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
                   <th className="py-3 px-4">Receipt Ref</th>

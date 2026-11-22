@@ -80,7 +80,7 @@ export function TeacherDashboardPage() {
       </PageHeader>
 
       {/* Metric Cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
         <div onClick={() => navigate("/teacher/batches")} className="cursor-pointer">
           <StatCard
             title="Assigned Batches"

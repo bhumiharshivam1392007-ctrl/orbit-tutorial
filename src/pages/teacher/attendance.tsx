@@ -232,7 +232,7 @@ export function TeacherAttendancePage() {
 
       {/* Attendance Stats Summary Bar */}
       {totalCount > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
           <div className="rounded-xl border border-border/60 bg-card p-3 text-center">
             <span className="text-[11px] text-muted-foreground block font-medium">Total Enrolled</span>
             <span className="text-xl font-bold text-foreground">{totalCount}</span>
@@ -249,7 +249,7 @@ export function TeacherAttendancePage() {
             <span className="text-[11px] text-amber-600 dark:text-amber-400 block font-medium">Late</span>
             <span className="text-xl font-bold text-amber-600">{lateCount}</span>
           </div>
-          <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 text-center">
+          <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 text-center col-span-2 sm:col-span-1">
             <span className="text-[11px] text-indigo-600 dark:text-indigo-400 block font-medium">Turnout</span>
             <span className="text-xl font-bold text-indigo-600">{presentPercent}%</span>
           </div>
@@ -262,7 +262,7 @@ export function TeacherAttendancePage() {
       ) : totalCount > 0 ? (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm min-w-[580px]">
               <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
                   <th className="py-3 px-4 w-12 text-center">#</th>

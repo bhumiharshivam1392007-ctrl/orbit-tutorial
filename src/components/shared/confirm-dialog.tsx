@@ -38,7 +38,7 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-0 mt-4">
+        <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-2 mt-4">
           <Button
             type="button"
             variant="outline"

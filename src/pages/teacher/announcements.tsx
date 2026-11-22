@@ -170,7 +170,7 @@ export function TeacherAnnouncementsPage() {
 
       {/* Create Announcement Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[88vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Broadcast Batch Notice</DialogTitle>
           </DialogHeader>

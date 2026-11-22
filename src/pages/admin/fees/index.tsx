@@ -169,7 +169,7 @@ export function FeesManagementPage() {
           ) : filteredPayments.length > 0 ? (
             <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left text-sm min-w-[660px]">
                   <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
                     <tr>
                       <th className="py-3.5 px-4">Receipt #</th>
@@ -260,51 +260,53 @@ export function FeesManagementPage() {
             <div className="h-64 rounded-2xl border border-border/60 bg-card p-6 animate-pulse" />
           ) : (pendingDues || []).length > 0 ? (
             <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
-                  <tr>
-                    <th className="py-3.5 px-4">Student</th>
-                    <th className="py-3.5 px-4">Phone</th>
-                    <th className="py-3.5 px-4">Batch</th>
-                    <th className="py-3.5 px-4">Due Month</th>
-                    <th className="py-3.5 px-4">Fee Due</th>
-                    <th className="py-3.5 px-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/40">
-                  {(pendingDues || []).map((due, idx) => (
-                    <tr key={idx} className="hover:bg-accent/40 transition-colors">
-                      <td className="py-3.5 px-4 font-semibold text-foreground">
-                        {due.student_name}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs text-muted-foreground">
-                        {due.student_phone || "—"}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs font-medium">
-                        {due.batch_name}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <Badge variant="destructive" className="text-[10px] py-0 font-semibold">
-                          {due.month_label}
-                        </Badge>
-                      </td>
-                      <td className="py-3.5 px-4 font-bold text-rose-600">
-                        {formatCurrency(due.monthly_fee)}
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <Button
-                          size="sm"
-                          className="h-8 gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-700"
-                          onClick={() => handlePayDue(due.student_id, due.batch_id)}
-                        >
-                          <span>Collect Now</span>
-                          <ArrowRight className="h-3 w-3" />
-                        </Button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[580px]">
+                  <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
+                    <tr>
+                      <th className="py-3.5 px-4">Student</th>
+                      <th className="py-3.5 px-4">Phone</th>
+                      <th className="py-3.5 px-4">Batch</th>
+                      <th className="py-3.5 px-4">Due Month</th>
+                      <th className="py-3.5 px-4">Fee Due</th>
+                      <th className="py-3.5 px-4 text-right">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {(pendingDues || []).map((due, idx) => (
+                      <tr key={idx} className="hover:bg-accent/40 transition-colors">
+                        <td className="py-3.5 px-4 font-semibold text-foreground">
+                          {due.student_name}
+                        </td>
+                        <td className="py-3.5 px-4 text-xs text-muted-foreground">
+                          {due.student_phone || "—"}
+                        </td>
+                        <td className="py-3.5 px-4 text-xs font-medium">
+                          {due.batch_name}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <Badge variant="destructive" className="text-[10px] py-0 font-semibold">
+                            {due.month_label}
+                          </Badge>
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-rose-600">
+                          {formatCurrency(due.monthly_fee)}
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <Button
+                            size="sm"
+                            className="h-8 gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-700"
+                            onClick={() => handlePayDue(due.student_id, due.batch_id)}
+                          >
+                            <span>Collect Now</span>
+                            <ArrowRight className="h-3 w-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : (
             <div className="rounded-2xl border border-border/60 bg-card p-12 text-center space-y-2">

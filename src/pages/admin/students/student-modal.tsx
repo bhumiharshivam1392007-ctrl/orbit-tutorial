@@ -123,7 +123,7 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-xl max-h-[88vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{studentToEdit ? "Edit Student Profile" : "Register New Student"}</DialogTitle>
         </DialogHeader>
@@ -134,7 +134,7 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               1. Student Details
             </h4>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="s-name">Full Name *</Label>
                 <Input
@@ -157,7 +157,7 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="s-email">Email Address *</Label>
                 <Input
@@ -185,7 +185,7 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="s-dob">Date of Birth</Label>
                 <Input
@@ -217,7 +217,7 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               2. Guardian & Address
             </h4>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="g-name">Guardian Name</Label>
                 <Input

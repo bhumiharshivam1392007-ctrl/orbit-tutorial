@@ -28,17 +28,28 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border/60 bg-background/80 px-4 md:px-6 backdrop-blur-xl">
       {/* Left side: Mobile menu toggle + breadcrumbs */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <Button
           variant="ghost"
           size="icon"
           onClick={onOpenMobileNav}
-          className="md:hidden h-9 w-9 text-muted-foreground"
+          className="md:hidden h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
           aria-label="Open mobile navigation"
         >
           <Menu className="h-5 w-5" />
         </Button>
 
+        {/* Mobile branding */}
+        <div className="flex items-center gap-2 md:hidden">
+          <span className="font-bold text-sm bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent">
+            ORBIT
+          </span>
+          <Badge variant="outline" className="text-[10px] capitalize font-medium py-0 px-1.5 bg-muted/40">
+            {role || "Portal"}
+          </Badge>
+        </div>
+
+        {/* Desktop breadcrumb */}
         <div className="hidden sm:flex items-center gap-2">
           <span className="text-sm font-semibold text-foreground">ORBIT Portal</span>
           <span className="text-muted-foreground/60">•</span>

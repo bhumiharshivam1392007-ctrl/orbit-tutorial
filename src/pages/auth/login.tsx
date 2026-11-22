@@ -170,7 +170,7 @@ export function LoginPage() {
       </div>
 
       {/* RIGHT COLUMN: Polished Login Card */}
-      <div className="flex flex-1 flex-col items-center justify-center p-6 md:p-12">
+      <div className="flex flex-1 flex-col items-center justify-center p-4 sm:p-6 md:p-12 w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

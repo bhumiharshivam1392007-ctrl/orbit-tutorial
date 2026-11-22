@@ -146,7 +146,7 @@ export function StudentsListPage() {
       ) : filteredStudents.length > 0 ? (
         <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm min-w-[660px]">
               <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
                   <th className="py-3.5 px-4">Student</th>

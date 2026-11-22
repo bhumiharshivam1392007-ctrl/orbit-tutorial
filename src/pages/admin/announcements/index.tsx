@@ -209,7 +209,7 @@ export function AnnouncementsPage() {
 
       {/* Create Announcement Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-lg max-h-[88vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Broadcast New Announcement</DialogTitle>
           </DialogHeader>
@@ -226,7 +226,7 @@ export function AnnouncementsPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Target Audience *</Label>
                 <Select

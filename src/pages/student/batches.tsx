@@ -45,11 +45,11 @@ export function StudentBatchesPage() {
           ))}
         </div>
       ) : batches.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
           {batches.map((batch) => (
             <Card
               key={batch.batch_id}
-              className="p-6 space-y-4 hover:border-indigo-500/30 transition-all hover:shadow-md"
+              className="p-4 sm:p-6 space-y-4 hover:border-indigo-500/30 transition-all hover:shadow-md"
             >
               <div className="flex items-start justify-between">
                 <div>

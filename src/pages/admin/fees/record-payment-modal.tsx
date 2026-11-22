@@ -125,7 +125,7 @@ export function RecordPaymentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[88vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Record Fee Payment</DialogTitle>
         </DialogHeader>
@@ -165,7 +165,7 @@ export function RecordPaymentModal({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="fee-amount">Amount (₹) *</Label>
               <Input
@@ -191,7 +191,7 @@ export function RecordPaymentModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Payment Mode *</Label>
               <Select value={paymentMode} onValueChange={(val: any) => setPaymentMode(val)}>

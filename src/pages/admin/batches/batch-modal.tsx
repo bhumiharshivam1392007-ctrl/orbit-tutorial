@@ -252,7 +252,7 @@ export function BatchModal({ open, onOpenChange, batchToEdit }: BatchModalProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-2xl max-h-[88vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-indigo-600" />

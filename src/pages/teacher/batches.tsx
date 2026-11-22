@@ -142,7 +142,7 @@ export function TeacherBatchesPage() {
                 </div>
               ) : (roster || []).length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
+                  <table className="w-full text-left text-sm min-w-[520px]">
                     <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
                       <tr>
                         <th className="py-3 px-4">Student</th>

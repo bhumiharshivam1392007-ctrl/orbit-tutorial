@@ -28,26 +28,26 @@ export function StatCard({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay }}
-      className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all hover:shadow-md hover:border-indigo-500/30"
+      className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-4 sm:p-6 shadow-sm transition-all hover:shadow-md hover:border-indigo-500/30"
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">{title}</span>
+        <span className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</span>
         <div
           className={cn(
-            "flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br transition-transform group-hover:scale-105",
+            "flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-gradient-to-br transition-transform group-hover:scale-105",
             gradient
           )}
         >
-          <Icon className="h-5 w-5" />
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </div>
 
-      <div className="mt-3">
-        <div className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+      <div className="mt-2.5 sm:mt-3">
+        <div className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
           {value}
         </div>
         {(change || description) && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
             {change && (
               <span
                 className={cn(
@@ -60,7 +60,7 @@ export function StatCard({
                 {change}
               </span>
             )}
-            {description && <span>{description}</span>}
+            {description && <span className="truncate">{description}</span>}
           </div>
         )}
       </div>

@@ -86,22 +86,22 @@ export function StudentAttendancePage() {
       />
 
       {/* Attendance Stats Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-2xl border border-border/60 bg-card p-4 text-center">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <div className="rounded-2xl border border-border/60 bg-card p-3 sm:p-4 text-center">
           <span className="text-xs text-muted-foreground block font-medium">Classes Held</span>
-          <span className="text-2xl font-bold text-foreground mt-1 block">{stats.total}</span>
+          <span className="text-xl sm:text-2xl font-bold text-foreground mt-1 block">{stats.total}</span>
         </div>
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center">
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 sm:p-4 text-center">
           <span className="text-xs text-emerald-600 dark:text-emerald-400 block font-medium">Days Present</span>
-          <span className="text-2xl font-bold text-emerald-600 mt-1 block">{stats.present}</span>
+          <span className="text-xl sm:text-2xl font-bold text-emerald-600 mt-1 block">{stats.present}</span>
         </div>
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-center">
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3 sm:p-4 text-center">
           <span className="text-xs text-amber-600 dark:text-amber-400 block font-medium">Days Late</span>
-          <span className="text-2xl font-bold text-amber-600 mt-1 block">{stats.late}</span>
+          <span className="text-xl sm:text-2xl font-bold text-amber-600 mt-1 block">{stats.late}</span>
         </div>
-        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 text-center">
+        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-3 sm:p-4 text-center">
           <span className="text-xs text-rose-600 dark:text-rose-400 block font-medium">Days Absent</span>
-          <span className="text-2xl font-bold text-rose-600 mt-1 block">{stats.absent}</span>
+          <span className="text-xl sm:text-2xl font-bold text-rose-600 mt-1 block">{stats.absent}</span>
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export function StudentAttendancePage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm min-w-[360px]">
               <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
                   <th className="py-3 px-4">Date</th>

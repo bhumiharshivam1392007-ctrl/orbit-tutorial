@@ -32,32 +32,32 @@ export function PrintableReceiptModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden bg-background">
-        <DialogHeader className="p-6 pb-0 no-print">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 bg-background">
+        <DialogHeader className="p-4 sm:p-6 pb-0 no-print">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-bold">Fee Payment Receipt</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg font-bold">Fee Payment Receipt</DialogTitle>
             <Button
               onClick={handlePrint}
               size="sm"
-              className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8 sm:h-9"
             >
-              <Printer className="h-4 w-4" />
+              <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span>Print Receipt</span>
             </Button>
           </div>
         </DialogHeader>
 
         {/* Printable Paper Canvas */}
-        <div className="p-8 print:p-0" id="printable-receipt-content">
-          <div className="rounded-2xl border-2 border-indigo-500/20 bg-card p-8 shadow-sm print:border-none print:shadow-none print:p-2">
+        <div className="p-4 sm:p-8 print:p-0" id="printable-receipt-content">
+          <div className="rounded-2xl border-2 border-indigo-500/20 bg-card p-4 sm:p-8 shadow-sm print:border-none print:shadow-none print:p-2">
             {/* Institute Header */}
-            <div className="flex items-start justify-between border-b pb-6 border-border/80">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b pb-4 sm:pb-6 border-border/80">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white font-bold text-xl shadow-md">
+                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white font-bold text-lg sm:text-xl shadow-md shrink-0">
                   O
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold tracking-tight text-foreground">
+                  <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
                     ORBIT COACHING INSTITUTE
                   </h2>
                   <p className="text-xs text-muted-foreground">
@@ -69,7 +69,7 @@ export function PrintableReceiptModal({
                 </div>
               </div>
 
-              <div className="text-right">
+              <div className="sm:text-right">
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600">
                   <CheckCircle2 className="h-3.5 w-3.5" /> PAID
                 </span>
@@ -83,7 +83,7 @@ export function PrintableReceiptModal({
             </div>
 
             {/* Student & Batch Information */}
-            <div className="grid grid-cols-2 gap-4 py-6 text-sm border-b border-border/80">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4 sm:py-6 text-sm border-b border-border/80">
               <div className="space-y-1">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Student Details
@@ -99,7 +99,7 @@ export function PrintableReceiptModal({
                 </p>
               </div>
 
-              <div className="space-y-1 text-right">
+              <div className="space-y-1 sm:text-right">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Batch & Timing
                 </span>
@@ -116,8 +116,8 @@ export function PrintableReceiptModal({
             </div>
 
             {/* Payment Particulars Table */}
-            <div className="py-6">
-              <table className="w-full text-left text-sm">
+            <div className="py-4 sm:py-6 overflow-x-auto">
+              <table className="w-full text-left text-sm min-w-[380px]">
                 <thead>
                   <tr className="border-b border-border text-xs text-muted-foreground uppercase font-semibold">
                     <th className="pb-2">Description</th>
@@ -156,13 +156,13 @@ export function PrintableReceiptModal({
             </div>
 
             {/* Footer with Authorization Stamp */}
-            <div className="mt-8 pt-6 border-t border-border flex items-end justify-between">
+            <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-border flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>• Computer-generated fee acknowledgment receipt.</p>
                 <p>• Fees once paid are non-refundable & non-transferable.</p>
               </div>
 
-              <div className="text-center">
+              <div className="sm:text-center self-end sm:self-auto">
                 <div className="h-10 w-32 border-b border-dashed border-border mx-auto mb-1.5" />
                 <p className="text-xs font-semibold text-foreground">Authorized Signatory</p>
                 <p className="text-[10px] text-muted-foreground">ORBIT Accounts Office</p>

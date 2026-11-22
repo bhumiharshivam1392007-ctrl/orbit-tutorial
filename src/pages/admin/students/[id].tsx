@@ -94,41 +94,41 @@ export function StudentProfilePage() {
       </div>
 
       {/* Header Profile Card */}
-      <Card className="p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <Card className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 ring-4 ring-indigo-500/20">
-              <AvatarFallback className="text-xl font-bold">
+            <Avatar className="h-14 w-14 sm:h-16 sm:w-16 ring-4 ring-indigo-500/20 shrink-0">
+              <AvatarFallback className="text-lg sm:text-xl font-bold">
                 {getInitials(student.profiles?.full_name || "S")}
               </AvatarFallback>
             </Avatar>
 
-            <div className="space-y-1">
-              <h3 className="text-xl font-bold text-foreground">
+            <div className="space-y-1 min-w-0">
+              <h3 className="text-lg sm:text-xl font-bold text-foreground truncate">
                 {student.profiles?.full_name}
               </h3>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5 text-indigo-500" />
-                  {student.profiles?.email}
+                <span className="flex items-center gap-1.5 truncate">
+                  <Mail className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                  <span className="truncate">{student.profiles?.email}</span>
                 </span>
                 {student.profiles?.phone && (
                   <span className="flex items-center gap-1.5">
-                    <Phone className="h-3.5 w-3.5 text-indigo-500" />
-                    {student.profiles.phone}
+                    <Phone className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                    <span>{student.profiles.phone}</span>
                   </span>
                 )}
                 {student.date_of_birth && (
                   <span className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5 text-indigo-500" />
-                    DOB: {formatDate(student.date_of_birth)}
+                    <Calendar className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                    <span>DOB: {formatDate(student.date_of_birth)}</span>
                   </span>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
             <Button
               variant="outline"
               size="sm"
@@ -224,56 +224,58 @@ export function StudentProfilePage() {
         <TabsContent value="payments">
           {(student.payments || []).length > 0 ? (
             <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
-                  <tr>
-                    <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4">Batch</th>
-                    <th className="py-3 px-4">Month</th>
-                    <th className="py-3 px-4">Mode</th>
-                    <th className="py-3 px-4">Amount</th>
-                    <th className="py-3 px-4 text-right">Receipt</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/40">
-                  {(student.payments || []).map((p: any) => (
-                    <tr key={p.id} className="hover:bg-accent/40">
-                      <td className="py-3 px-4 text-xs font-mono">
-                        {formatDate(p.payment_date)}
-                      </td>
-                      <td className="py-3 px-4 font-medium text-foreground">
-                        {p.batches?.name}
-                      </td>
-                      <td className="py-3 px-4 text-xs text-muted-foreground">
-                        {p.month_label}
-                      </td>
-                      <td className="py-3 px-4 text-xs capitalize text-muted-foreground">
-                        {p.payment_mode.replace("_", " ")}
-                      </td>
-                      <td className="py-3 px-4 font-bold text-emerald-600">
-                        {formatCurrency(p.amount)}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 gap-1.5 text-xs text-indigo-600"
-                          onClick={() => {
-                            setSelectedReceipt({
-                              ...p,
-                              students: student,
-                            })
-                            setReceiptModalOpen(true)
-                          }}
-                        >
-                          <Printer className="h-3.5 w-3.5" />
-                          <span>Receipt</span>
-                        </Button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[560px]">
+                  <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
+                    <tr>
+                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">Batch</th>
+                      <th className="py-3 px-4">Month</th>
+                      <th className="py-3 px-4">Mode</th>
+                      <th className="py-3 px-4">Amount</th>
+                      <th className="py-3 px-4 text-right">Receipt</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {(student.payments || []).map((p: any) => (
+                      <tr key={p.id} className="hover:bg-accent/40">
+                        <td className="py-3 px-4 text-xs font-mono">
+                          {formatDate(p.payment_date)}
+                        </td>
+                        <td className="py-3 px-4 font-medium text-foreground">
+                          {p.batches?.name}
+                        </td>
+                        <td className="py-3 px-4 text-xs text-muted-foreground">
+                          {p.month_label}
+                        </td>
+                        <td className="py-3 px-4 text-xs capitalize text-muted-foreground">
+                          {p.payment_mode.replace("_", " ")}
+                        </td>
+                        <td className="py-3 px-4 font-bold text-emerald-600">
+                          {formatCurrency(p.amount)}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1.5 text-xs text-indigo-600"
+                            onClick={() => {
+                              setSelectedReceipt({
+                                ...p,
+                                students: student,
+                              })
+                              setReceiptModalOpen(true)
+                            }}
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                            <span>Receipt</span>
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : (
             <Card className="p-8 text-center text-muted-foreground text-sm">
@@ -284,12 +286,12 @@ export function StudentProfilePage() {
 
         {/* Tab 3: Personal & Guardian Info */}
         <TabsContent value="info">
-          <Card className="p-6 space-y-6">
+          <Card className="p-4 sm:p-6 space-y-6">
             <div>
               <h4 className="text-sm font-bold text-foreground uppercase tracking-wider mb-3">
                 Guardian Details
               </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-xs text-muted-foreground block">Guardian Name</span>
                   <span className="font-medium text-foreground">
@@ -311,7 +313,7 @@ export function StudentProfilePage() {
               </h4>
               <p className="text-sm text-foreground flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-indigo-500 shrink-0" />
-                {student.address || "No address entered"}
+                <span className="break-all">{student.address || "No address entered"}</span>
               </p>
             </div>
           </Card>
