@@ -121,7 +121,7 @@ export function BatchesListPage() {
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50">
                         {batch.batch_subjects?.length || 1} Subjects
@@ -137,14 +137,22 @@ export function BatchesListPage() {
                         {batch.status === "active" ? "Active" : "Inactive"}
                       </Badge>
                     </div>
-                    <CardTitle className="text-lg font-bold group-hover:text-indigo-600 transition-colors">
+                    <CardTitle
+                      className="text-lg font-bold group-hover:text-indigo-600 transition-colors truncate"
+                      title={batch.name}
+                    >
                       {batch.name}
                     </CardTitle>
                   </div>
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 relative z-10"
+                        aria-label="Batch actions"
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>

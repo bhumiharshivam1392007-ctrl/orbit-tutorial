@@ -120,17 +120,20 @@ export function TeachersListPage() {
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-11 w-11 ring-2 ring-indigo-500/20">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Avatar className="h-11 w-11 ring-2 ring-indigo-500/20 shrink-0">
                       <AvatarFallback>
                         {getInitials(teacher.profiles?.full_name || "T")}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <CardTitle className="text-base font-bold group-hover:text-indigo-600 transition-colors">
-                        {teacher.profiles?.full_name}
+                    <div className="min-w-0 flex-1">
+                      <CardTitle
+                        className="text-base font-bold group-hover:text-indigo-600 transition-colors truncate"
+                        title={teacher.profiles?.full_name || "Teacher"}
+                      >
+                        {teacher.profiles?.full_name || "Teacher"}
                       </CardTitle>
-                      <p className="text-xs text-muted-foreground font-medium">
+                      <p className="text-xs text-muted-foreground font-medium truncate">
                         {teacher.subject} • {teacher.qualification || "Instructor"}
                       </p>
                     </div>
@@ -138,11 +141,16 @@ export function TeachersListPage() {
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 relative z-10"
+                        aria-label="Teacher actions"
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="w-44">
                       <DropdownMenuItem
                         onClick={() => {
                           setEditingTeacher(teacher)

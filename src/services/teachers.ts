@@ -144,34 +144,66 @@ export async function createTeacher(data: TeacherFormData) {
 }
 
 export async function updateTeacher(id: string, profileId: string, data: Partial<TeacherFormData>) {
-  if (data.full_name || data.phone) {
-    await supabase
+  if (profileId && (data.full_name !== undefined || data.phone !== undefined)) {
+    const profileUpdates: Record<string, any> = {}
+    if (data.full_name !== undefined) profileUpdates.full_name = data.full_name
+    if (data.phone !== undefined) profileUpdates.phone = data.phone || null
+
+    const { error: profileError } = await supabase
       .from("profiles")
-      .update({
-        full_name: data.full_name,
-        phone: data.phone || null,
-      } as any)
+      .update(profileUpdates as any)
       .eq("id", profileId)
+
+    if (profileError) {
+      console.error("Error updating teacher profile:", profileError)
+      throw new Error(`Profile update failed: ${profileError.message}`)
+    }
   }
+
+  const teacherUpdates: Record<string, any> = {}
+  if (data.subject !== undefined) teacherUpdates.subject = data.subject
+  if (data.qualification !== undefined) teacherUpdates.qualification = data.qualification || null
+  if (data.salary !== undefined) teacherUpdates.salary = Number(data.salary)
+  if (data.status !== undefined) teacherUpdates.status = data.status
 
   const { data: updated, error } = await supabase
     .from("teachers")
-    .update({
-      subject: data.subject,
-      qualification: data.qualification || null,
-      salary: data.salary !== undefined ? Number(data.salary) : undefined,
-      status: data.status,
-    } as any)
+    .update(teacherUpdates as any)
     .eq("id", id)
-    .select()
+    .select(`
+      *,
+      profiles (*)
+    `)
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error("Error updating teacher record:", error)
+    throw error
+  }
   return updated
 }
 
 export async function deleteTeacher(id: string, profileId: string) {
-  const { error } = await supabase.from("teachers").delete().eq("id", id)
-  if (error) throw error
-  await supabase.from("profiles").delete().eq("id", profileId)
+  // 1. Delete from teachers table first
+  const { error: teacherError } = await supabase
+    .from("teachers")
+    .delete()
+    .eq("id", id)
+
+  if (teacherError) {
+    console.error("Error deleting teacher:", teacherError)
+    throw teacherError
+  }
+
+  // 2. If profileId exists, safely attempt to remove profile as well
+  if (profileId) {
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", profileId)
+
+    if (profileError) {
+      console.warn("Notice: Teacher record was deleted, but profile could not be removed:", profileError.message)
+    }
+  }
 }
