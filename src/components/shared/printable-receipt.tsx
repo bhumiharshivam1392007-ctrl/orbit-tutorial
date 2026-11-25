@@ -58,13 +58,13 @@ export function PrintableReceiptModal({
                 </div>
                 <div>
                   <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
-                    ORBIT COACHING INSTITUTE
+                    ORBIT TUTORIAL
                   </h2>
                   <p className="text-xs text-muted-foreground">
                     Excellence in Competitive & Board Coaching
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Tel: +91 98765 43210 • Email: contact@orbit.edu
+                    Tel: +91 81015 32810 • Email: orbittutorial75@gmail.com
                   </p>
                 </div>
               </div>
