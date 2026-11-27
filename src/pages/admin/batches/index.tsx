@@ -1,31 +1,16 @@
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import {
-  Layers,
-  Plus,
-  Search,
-  GraduationCap,
-  IndianRupee,
-  MoreVertical,
-  Edit2,
-  Trash2,
-} from "lucide-react"
+import { Layers, Plus, Search } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { fetchBatches, deleteBatch, formatSlotTiming, groupBatchSubjects } from "@/services/batches"
+import { fetchBatches, deleteBatch } from "@/services/batches"
+import { BatchCard } from "@/pages/admin/batches/batch-card"
+import { BatchDetailsDrawer } from "@/pages/admin/batches/batch-details-drawer"
 import { BatchModal } from "@/pages/admin/batches/batch-modal"
-import { formatCurrency } from "@/lib/utils"
 import { toast } from "sonner"
 import type { BatchWithSubjects } from "@/types/database"
 
@@ -34,6 +19,7 @@ export function BatchesListPage() {
   const [search, setSearch] = useState("")
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBatch, setEditingBatch] = useState<BatchWithSubjects | null>(null)
+  const [selectedBatch, setSelectedBatch] = useState<BatchWithSubjects | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BatchWithSubjects | null>(null)
 
   const { data: batches, isLoading } = useQuery({
@@ -48,16 +34,23 @@ export function BatchesListPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] })
       toast.success("Batch deleted successfully")
       setDeleteTarget(null)
+      if (selectedBatch?.id === deleteTarget?.id) {
+        setSelectedBatch(null)
+      }
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete batch")
     },
   })
 
+  // Search filter across batch name, legacy subject/teacher, and multiple batch_subjects/teachers
   const filteredBatches = (batches || []).filter((b) => {
-    const q = search.toLowerCase()
+    const q = search.toLowerCase().trim()
+    if (!q) return true
     const nameMatch = b.name.toLowerCase().includes(q)
-    const legacyMatch = (b.subject || "").toLowerCase().includes(q) || (b.teachers?.profiles?.full_name || "").toLowerCase().includes(q)
+    const legacyMatch =
+      (b.subject || "").toLowerCase().includes(q) ||
+      (b.teachers?.profiles?.full_name || "").toLowerCase().includes(q)
     const subjectsMatch = (b.batch_subjects || []).some(
       (s) =>
         s.subject.toLowerCase().includes(q) ||
@@ -65,6 +58,10 @@ export function BatchesListPage() {
     )
     return nameMatch || legacyMatch || subjectsMatch
   })
+
+  // Sync selectedBatch with live query cache if it updates
+  const activeSelectedBatch =
+    batches?.find((b) => b.id === selectedBatch?.id) || selectedBatch
 
   return (
     <div className="space-y-6">
@@ -82,14 +79,14 @@ export function BatchesListPage() {
             setEditingBatch(null)
             setModalOpen(true)
           }}
-          className="gap-2"
+          className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
         >
           <Plus className="h-4 w-4" />
           <span>Create Batch</span>
         </Button>
       </PageHeader>
 
-      {/* Search & Filter Bar */}
+      {/* Search Bar */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
@@ -102,141 +99,30 @@ export function BatchesListPage() {
         </div>
       </div>
 
-      {/* Batches Grid */}
+      {/* Batches Grid (Clean, compact, uniform height cards) */}
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-48 rounded-2xl border border-border/50 bg-card p-6 animate-pulse space-y-4"
+              className="h-[155px] rounded-2xl border border-border/50 bg-card p-5 animate-pulse space-y-3"
             />
           ))}
         </div>
       ) : filteredBatches.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredBatches.map((batch) => {
-            const groupedSubjects = groupBatchSubjects(batch.batch_subjects || [])
-            const subjectCount = groupedSubjects.length || (batch.subject ? 1 : 0)
-
-            return (
-            <Card
+          {filteredBatches.map((batch) => (
+            <BatchCard
               key={batch.id}
-              className="group relative overflow-hidden transition-all hover:shadow-md hover:border-indigo-500/30"
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50">
-                        {subjectCount} {subjectCount === 1 ? "Subject" : "Subjects"}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={
-                          batch.status === "active"
-                            ? "text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/30"
-                            : "text-[10px] text-muted-foreground"
-                        }
-                      >
-                        {batch.status === "active" ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                    <CardTitle
-                      className="text-lg font-bold group-hover:text-indigo-600 transition-colors truncate"
-                      title={batch.name}
-                    >
-                      {batch.name}
-                    </CardTitle>
-                  </div>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 relative z-10"
-                        aria-label="Batch actions"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setEditingBatch(batch)
-                          setModalOpen(true)
-                        }}
-                      >
-                        <Edit2 className="mr-2 h-4 w-4" /> Edit Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setDeleteTarget(batch)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete Batch
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-3 pt-0">
-                {/* Subject & Faculty Timetable Chips */}
-                <div className="space-y-2 min-h-[50px]">
-                  {groupedSubjects.length > 0 ? (
-                    groupedSubjects.map((sub, sIdx) => {
-                      const teacherObj = (batch.batch_subjects || []).find(
-                        (bs) => bs.subject.toLowerCase() === sub.subject.toLowerCase() && bs.teacher_id === sub.teacher_id
-                      )
-                      const teacherName = teacherObj?.teachers?.profiles?.full_name || "No teacher assigned"
-
-                      return (
-                        <div
-                          key={sIdx}
-                          className="p-2 rounded-lg bg-muted/40 border border-border/50 text-xs space-y-1.5"
-                        >
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span className="font-semibold text-foreground truncate">{sub.subject}</span>
-                            <span className="text-[11px] text-muted-foreground truncate max-w-[130px]">
-                              • {teacherName}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {sub.slots.map((slot, slotIdx) => (
-                              <span
-                                key={slotIdx}
-                                className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-200/50 dark:border-indigo-800/40"
-                              >
-                                {formatSlotTiming(slot.days, slot.start_time, slot.end_time)}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
-                      <span>{batch.subject || "General"}</span>
-                      {batch.timing && <span>• {batch.timing}</span>}
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1 font-semibold text-foreground">
-                    <IndianRupee className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>{formatCurrency(batch.monthly_fee)} / mo</span>
-                  </div>
-
-                  <div className="flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 text-indigo-600 dark:text-indigo-400 font-medium">
-                    <GraduationCap className="h-3 w-3" />
-                    <span>{batch.student_count || 0} Enrolled</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            )
-          })}
+              batch={batch}
+              onSelect={(b) => setSelectedBatch(b)}
+              onEdit={(b) => {
+                setEditingBatch(b)
+                setModalOpen(true)
+              }}
+              onDelete={(b) => setDeleteTarget(b)}
+            />
+          ))}
         </div>
       ) : (
         <EmptyState
@@ -255,10 +141,25 @@ export function BatchesListPage() {
         />
       )}
 
+      {/* Batch Details Slide-over Drawer */}
+      <BatchDetailsDrawer
+        batch={activeSelectedBatch}
+        open={!!selectedBatch}
+        onClose={() => setSelectedBatch(null)}
+        onEdit={(b) => {
+          setSelectedBatch(null)
+          setEditingBatch(b)
+          setModalOpen(true)
+        }}
+      />
+
       {/* Batch Create/Edit Modal */}
       <BatchModal
         open={modalOpen}
-        onOpenChange={setModalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open)
+          if (!open) setEditingBatch(null)
+        }}
         batchToEdit={editingBatch}
       />
 
@@ -275,4 +176,3 @@ export function BatchesListPage() {
     </div>
   )
 }
-

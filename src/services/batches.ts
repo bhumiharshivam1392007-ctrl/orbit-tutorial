@@ -603,3 +603,77 @@ export async function deleteBatch(id: string) {
   const { error } = await supabase.from("batches").delete().eq("id", id)
   if (error) throw error
 }
+
+export interface BatchStudentItem {
+  enrollment_id: string
+  student_id: string
+  enrolled_on: string
+  status: string
+  full_name: string
+  email: string
+  phone: string
+  guardian_name: string | null
+  guardian_phone: string | null
+  avatar_url: string | null
+}
+
+/**
+ * Fetch list of enrolled students for a specific batch
+ */
+export async function fetchBatchStudents(batchId: string): Promise<BatchStudentItem[]> {
+  const { data, error } = await supabase
+    .from("enrollments")
+    .select(`
+      id,
+      enrolled_on,
+      status,
+      students (
+        id,
+        guardian_name,
+        guardian_phone,
+        profiles (
+          id,
+          full_name,
+          email,
+          phone,
+          avatar_url
+        )
+      )
+    `)
+    .eq("batch_id", batchId)
+    .eq("status", "active")
+    .order("enrolled_on", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching batch students:", error)
+    return []
+  }
+
+  return (data || []).map((row: any) => ({
+    enrollment_id: row.id,
+    student_id: row.students?.id || "",
+    enrolled_on: row.enrolled_on || "",
+    status: row.status || "active",
+    full_name: row.students?.profiles?.full_name || "Enrolled Student",
+    email: row.students?.profiles?.email || "",
+    phone: row.students?.profiles?.phone || row.students?.guardian_phone || "",
+    guardian_name: row.students?.guardian_name || null,
+    guardian_phone: row.students?.guardian_phone || null,
+    avatar_url: row.students?.profiles?.avatar_url || null,
+  }))
+}
+
+/**
+ * Toggle a batch between active and inactive
+ */
+export async function toggleBatchStatus(batchId: string, currentStatus: "active" | "inactive") {
+  const newStatus = currentStatus === "active" ? "inactive" : "active"
+  const { data, error } = await supabase
+    .from("batches")
+    .update({ status: newStatus })
+    .eq("id", batchId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
