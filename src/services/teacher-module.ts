@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase"
 import { format } from "date-fns"
 import type { Batch, AttendanceStatus, AnnouncementWithAuthor } from "@/types/database"
+import { parseDaysToTokens, parseDaysToFullNames, formatSlotTiming } from "@/services/batches"
 
 export interface TeacherSubjectSchedule {
   id: string
@@ -8,6 +9,18 @@ export interface TeacherSubjectSchedule {
   days: string
   start_time: string | null
   end_time: string | null
+}
+
+export interface TeacherTodayLecture {
+  id: string
+  batch_id: string
+  batch_name: string
+  subject: string
+  days: string
+  start_time: string | null
+  end_time: string | null
+  timeFormatted: string
+  student_count: number
 }
 
 export interface TeacherBatchItem extends Batch {
@@ -50,6 +63,7 @@ export interface TeacherDashboardData {
     totalBatches: number
   }
   recentAnnouncements: AnnouncementWithAuthor[]
+  todayLectures: TeacherTodayLecture[]
 }
 
 // 1. Get Teacher record by Profile ID
@@ -79,6 +93,7 @@ export async function fetchTeacherDashboard(profileId: string): Promise<TeacherD
       totalStudents: 0,
       todayAttendanceStats: { markedBatches: 0, totalBatches: 0 },
       recentAnnouncements: [],
+      todayLectures: [],
     }
   }
 
@@ -160,8 +175,7 @@ export async function fetchTeacherDashboard(profileId: string): Promise<TeacherD
     const subjectsList = subjects.map((s) => s.subject).join(", ")
     const timingList = subjects
       .map((s) => {
-        const time = s.start_time && s.end_time ? `${s.start_time.slice(0, 5)}-${s.end_time.slice(0, 5)}` : ""
-        return `${s.subject}: ${s.days} ${time}`.trim()
+        return `${s.subject}: ${formatSlotTiming(s.days, s.start_time, s.end_time)}`
       })
       .join(" | ")
 
@@ -177,6 +191,33 @@ export async function fetchTeacherDashboard(profileId: string): Promise<TeacherD
       enrollments: batch.enrollments,
     }
   })
+
+  // Calculate today's specific scheduled lectures for this teacher
+  const todayToken = format(new Date(), "EEE") // e.g. "Mon", "Tue", "Fri"
+  const todayLectures: TeacherTodayLecture[] = []
+
+  for (const { batch, subjects } of batchMap.values()) {
+    const activeEnrollments = (batch.enrollments || []).filter((e: any) => e.status === "active")
+    for (const s of subjects) {
+      const tokens = parseDaysToTokens(s.days)
+      if (tokens.includes(todayToken)) {
+        todayLectures.push({
+          id: s.id,
+          batch_id: batch.id,
+          batch_name: batch.name,
+          subject: s.subject,
+          days: s.days,
+          start_time: s.start_time,
+          end_time: s.end_time,
+          timeFormatted: formatSlotTiming(s.days, s.start_time, s.end_time),
+          student_count: activeEnrollments.length,
+        })
+      }
+    }
+  }
+
+  // Sort today's lectures by start time
+  todayLectures.sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""))
 
   // Unique students count across all assigned batches
   const studentIdSet = new Set<string>()
@@ -229,6 +270,7 @@ export async function fetchTeacherDashboard(profileId: string): Promise<TeacherD
       totalBatches: batches.length,
     },
     recentAnnouncements: (annData || []) as unknown as AnnouncementWithAuthor[],
+    todayLectures,
   }
 }
 
@@ -498,31 +540,10 @@ export async function fetchTeacherWeeklySchedule(profileId: string): Promise<Tea
 
   const slots: TeacherScheduleSlot[] = []
 
-  const parseDays = (rawDays: string): string[] => {
-    const d = rawDays.toLowerCase().trim()
-    if (d.includes("mon-fri") || d.includes("mon to fri")) {
-      return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-    }
-    if (d.includes("mon-sat") || d.includes("mon to sat") || d.includes("daily")) {
-      return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-    }
-    const days: string[] = []
-    if (d.includes("mon")) days.push("Monday")
-    if (d.includes("tue")) days.push("Tuesday")
-    if (d.includes("wed")) days.push("Wednesday")
-    if (d.includes("thu")) days.push("Thursday")
-    if (d.includes("fri")) days.push("Friday")
-    if (d.includes("sat")) days.push("Saturday")
-    if (d.includes("sun")) days.push("Sunday")
-    return days.length > 0 ? days : ["Monday", "Wednesday", "Friday"]
-  }
-
   for (const item of (subData || []) as any[]) {
     if (!item.batches) continue
     const activeEnr = (item.batches.enrollments || []).filter((e: any) => e.status === "active")
-    const startTime = item.start_time ? item.start_time.slice(0, 5) : ""
-    const endTime = item.end_time ? item.end_time.slice(0, 5) : ""
-    const timeFormatted = startTime && endTime ? `${startTime} – ${endTime}` : item.days || "Scheduled"
+    const timeFormatted = formatSlotTiming(item.days, item.start_time, item.end_time)
 
     slots.push({
       id: item.id,
@@ -534,7 +555,7 @@ export async function fetchTeacherWeeklySchedule(profileId: string): Promise<Tea
       end_time: item.end_time,
       student_count: activeEnr.length,
       timeFormatted,
-      dayList: parseDays(item.days || "Mon-Fri"),
+      dayList: parseDaysToFullNames(item.days || "Mon-Fri"),
     })
   }
 

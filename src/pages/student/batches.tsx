@@ -91,7 +91,9 @@ export function StudentBatchesPage() {
                           </span>
                         </div>
                         <div className="text-right sm:text-right text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
-                          <span>{sub.days} • {sub.timing}</span>
+                          <span className="bg-indigo-50 dark:bg-indigo-950/60 px-2 py-1 rounded-md border border-indigo-200/50 dark:border-indigo-800/40">
+                            {sub.days} • {sub.timing}
+                          </span>
                         </div>
                       </div>
                     ))

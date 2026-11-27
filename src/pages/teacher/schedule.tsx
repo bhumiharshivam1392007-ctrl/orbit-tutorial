@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/hooks/use-auth"
 import { fetchTeacherWeeklySchedule } from "@/services/teacher-module"
 
-const DAYS_OF_WEEK = ["All", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const DAYS_OF_WEEK = ["All", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 export function TeacherSchedulePage() {
   const navigate = useNavigate()

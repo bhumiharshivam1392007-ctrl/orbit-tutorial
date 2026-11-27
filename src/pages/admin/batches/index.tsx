@@ -23,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { fetchBatches, deleteBatch } from "@/services/batches"
+import { fetchBatches, deleteBatch, formatSlotTiming, groupBatchSubjects } from "@/services/batches"
 import { BatchModal } from "@/pages/admin/batches/batch-modal"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "sonner"
@@ -114,7 +114,11 @@ export function BatchesListPage() {
         </div>
       ) : filteredBatches.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredBatches.map((batch) => (
+          {filteredBatches.map((batch) => {
+            const groupedSubjects = groupBatchSubjects(batch.batch_subjects || [])
+            const subjectCount = groupedSubjects.length || (batch.subject ? 1 : 0)
+
+            return (
             <Card
               key={batch.id}
               className="group relative overflow-hidden transition-all hover:shadow-md hover:border-indigo-500/30"
@@ -124,7 +128,7 @@ export function BatchesListPage() {
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50">
-                        {batch.batch_subjects?.length || 1} Subjects
+                        {subjectCount} {subjectCount === 1 ? "Subject" : "Subjects"}
                       </Badge>
                       <Badge
                         variant="outline"
@@ -178,29 +182,35 @@ export function BatchesListPage() {
 
               <CardContent className="space-y-3 pt-0">
                 {/* Subject & Faculty Timetable Chips */}
-                <div className="space-y-1.5 min-h-[50px]">
-                  {batch.batch_subjects && batch.batch_subjects.length > 0 ? (
-                    batch.batch_subjects.map((sub) => {
-                      const teacherName = sub.teachers?.profiles?.full_name || "No teacher assigned"
-                      const timingText =
-                        sub.start_time && sub.end_time
-                          ? `${sub.days || "Mon-Fri"} ${sub.start_time.slice(0, 5)} - ${sub.end_time.slice(0, 5)}`
-                          : sub.days || "Schedule unset"
+                <div className="space-y-2 min-h-[50px]">
+                  {groupedSubjects.length > 0 ? (
+                    groupedSubjects.map((sub, sIdx) => {
+                      const teacherObj = (batch.batch_subjects || []).find(
+                        (bs) => bs.subject.toLowerCase() === sub.subject.toLowerCase() && bs.teacher_id === sub.teacher_id
+                      )
+                      const teacherName = teacherObj?.teachers?.profiles?.full_name || "No teacher assigned"
 
                       return (
                         <div
-                          key={sub.id}
-                          className="flex items-center justify-between gap-2 p-2 rounded-lg bg-muted/40 border border-border/50 text-xs"
+                          key={sIdx}
+                          className="p-2 rounded-lg bg-muted/40 border border-border/50 text-xs space-y-1.5"
                         >
-                          <div className="flex items-center gap-1.5 truncate">
+                          <div className="flex items-center justify-between gap-1.5">
                             <span className="font-semibold text-foreground truncate">{sub.subject}</span>
-                            <span className="text-[11px] text-muted-foreground truncate">
+                            <span className="text-[11px] text-muted-foreground truncate max-w-[130px]">
                               • {teacherName}
                             </span>
                           </div>
-                          <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium shrink-0 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded">
-                            {timingText}
-                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {sub.slots.map((slot, slotIdx) => (
+                              <span
+                                key={slotIdx}
+                                className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-200/50 dark:border-indigo-800/40"
+                              >
+                                {formatSlotTiming(slot.days, slot.start_time, slot.end_time)}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       )
                     })
@@ -225,7 +235,8 @@ export function BatchesListPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <EmptyState

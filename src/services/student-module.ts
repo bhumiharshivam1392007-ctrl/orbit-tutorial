@@ -8,6 +8,7 @@ import {
   evaluateMonthFeeStatus,
 } from "@/lib/fee-calculations"
 import { startOfMonth, isAfter } from "date-fns"
+import { formatDaysDisplay, formatTime12Hour } from "@/services/batches"
 
 export interface StudentSubjectItem {
   id: string
@@ -216,19 +217,22 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
           const b = e.batches
           const teacherProfile = b.teachers?.profiles
           const subsList: StudentSubjectItem[] = (b.batch_subjects || []).map((bs: any) => {
-            const time = bs.start_time && bs.end_time ? `${bs.start_time.slice(0, 5)} - ${bs.end_time.slice(0, 5)}` : (bs.days || "Scheduled")
+            const time =
+              bs.start_time && bs.end_time
+                ? `${formatTime12Hour(bs.start_time)} - ${formatTime12Hour(bs.end_time)}`
+                : (bs.days || "Scheduled")
             return {
               id: bs.id,
               subject: bs.subject,
               teacher_name: bs.teachers?.profiles?.full_name || undefined,
               teacher_email: bs.teachers?.profiles?.email || undefined,
-              days: bs.days || "Mon-Fri",
+              days: formatDaysDisplay(bs.days || "Mon-Fri"),
               timing: time,
             }
           })
 
           const subjectsSummary = subsList.length > 0 ? subsList.map((s) => s.subject).join(", ") : b.subject
-          const timingSummary = subsList.length > 0 ? subsList.map((s) => `${s.subject}: ${s.days} ${s.timing}`).join(" | ") : b.timing
+          const timingSummary = subsList.length > 0 ? subsList.map((s) => `${s.subject}: ${s.days} • ${s.timing}`).join(" | ") : b.timing
 
           return {
             enrollment_id: e.id,
