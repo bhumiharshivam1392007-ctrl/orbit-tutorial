@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   Receipt,
   Plus,
@@ -10,25 +10,42 @@ import {
   Layers,
   ArrowRight,
   TrendingUp,
+  ShieldAlert,
+  Trash2,
+  Users,
+  User,
 } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { StatCard } from "@/components/shared/stat-card"
 import { EmptyState } from "@/components/shared/empty-state"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { fetchFeePayments, fetchPendingDues, fetchFeeStructures } from "@/services/fees"
+import {
+  fetchFeePayments,
+  fetchPendingDues,
+  fetchFeeStructures,
+  fetchFeeWaivers,
+  deleteFeeWaiver,
+} from "@/services/fees"
 import { RecordPaymentModal } from "@/pages/admin/fees/record-payment-modal"
+import { WaiveMonthModal } from "@/pages/admin/fees/waive-month-modal"
 import { PrintableReceiptModal } from "@/components/shared/printable-receipt"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import type { FeePaymentWithDetails } from "@/types/database"
+import { format, parseISO } from "date-fns"
+import type { FeePaymentWithDetails, FeeWaiverWithDetails } from "@/types/database"
+import { toast } from "sonner"
 
 export function FeesManagementPage() {
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<string>("history")
   const [search, setSearch] = useState("")
   const [recordModalOpen, setRecordModalOpen] = useState(false)
+  const [waiveModalOpen, setWaiveModalOpen] = useState(false)
+  const [deleteWaiverTarget, setDeleteWaiverTarget] = useState<FeeWaiverWithDetails | null>(null)
   const [targetStudentId, setTargetStudentId] = useState<string | undefined>()
   const [targetBatchId, setTargetBatchId] = useState<string | undefined>()
   const [selectedReceipt, setSelectedReceipt] = useState<FeePaymentWithDetails | null>(null)
@@ -47,6 +64,27 @@ export function FeesManagementPage() {
   const { data: structures } = useQuery({
     queryKey: ["fee-structures"],
     queryFn: fetchFeeStructures,
+  })
+
+  const { data: waivers, isLoading: waiversLoading } = useQuery({
+    queryKey: ["fee-waivers"],
+    queryFn: fetchFeeWaivers,
+  })
+
+  const deleteWaiverMutation = useMutation({
+    mutationFn: (waiverId: string) => deleteFeeWaiver(waiverId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fee-waivers"] })
+      queryClient.invalidateQueries({ queryKey: ["pending-dues"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] })
+      queryClient.invalidateQueries({ queryKey: ["student-fee-ledger"] })
+      queryClient.invalidateQueries({ queryKey: ["student-dashboard"] })
+      toast.success("Fee waiver removed successfully")
+      setDeleteWaiverTarget(null)
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to remove fee waiver")
+    },
   })
 
   // Filter payments
@@ -82,24 +120,34 @@ export function FeesManagementPage() {
     <div className="space-y-6">
       <PageHeader
         title="Fee & Financial Management"
-        description="Record student fees, print payment receipts, and monitor overdue collection rosters."
+        description="Record student fees, manage waivers, print receipts, and monitor collection rosters."
         badge={
           <Badge variant="outline" className="border-indigo-400/40 text-indigo-600 dark:text-indigo-400">
             Accounts
           </Badge>
         }
       >
-        <Button
-          onClick={() => {
-            setTargetStudentId(undefined)
-            setTargetBatchId(undefined)
-            setRecordModalOpen(true)
-          }}
-          className="gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Record Payment</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setWaiveModalOpen(true)}
+            className="gap-1.5 border-amber-400/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+          >
+            <ShieldAlert className="h-4 w-4" />
+            <span>Waive Month</span>
+          </Button>
+          <Button
+            onClick={() => {
+              setTargetStudentId(undefined)
+              setTargetBatchId(undefined)
+              setRecordModalOpen(true)
+            }}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Record Payment</span>
+          </Button>
+        </div>
       </PageHeader>
 
       {/* Financial Metrics */}
@@ -143,6 +191,9 @@ export function FeesManagementPage() {
               {(pendingDues?.length || 0) > 0 && (
                 <span className="ml-1.5 flex h-2 w-2 rounded-full bg-rose-500" />
               )}
+            </TabsTrigger>
+            <TabsTrigger value="waivers" className="rounded-lg text-xs font-semibold">
+              Fee Waivers ({waivers?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="structures" className="rounded-lg text-xs font-semibold">
               Fee Structures ({structures?.length || 0})
@@ -321,7 +372,121 @@ export function FeesManagementPage() {
           )}
         </TabsContent>
 
-        {/* Tab 3: Fee Structures */}
+        {/* Tab 3: Fee Waivers */}
+        <TabsContent value="waivers" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Active Fee Waivers</h3>
+              <p className="text-xs text-muted-foreground">
+                Exemptions granted to individual students or all students for specific months.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setWaiveModalOpen(true)}
+              className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>New Waiver</span>
+            </Button>
+          </div>
+
+          {waiversLoading ? (
+            <div className="h-64 rounded-2xl border border-border/60 bg-card p-6 animate-pulse" />
+          ) : (waivers || []).length > 0 ? (
+            <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[620px]">
+                  <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase">
+                    <tr>
+                      <th className="py-3.5 px-4">Scope</th>
+                      <th className="py-3.5 px-4">Applicable Class</th>
+                      <th className="py-3.5 px-4">Waiver Month</th>
+                      <th className="py-3.5 px-4">Reason / Notes</th>
+                      <th className="py-3.5 px-4">Date Granted</th>
+                      <th className="py-3.5 px-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {(waivers || []).map((w) => {
+                      const isAllStudents = !w.student_id
+                      const isAllBatches = !w.batch_id
+                      const formattedMonth = format(parseISO(w.month), "MMM yyyy")
+
+                      return (
+                        <tr key={w.id} className="hover:bg-accent/40 transition-colors">
+                          <td className="py-3.5 px-4">
+                            {isAllStudents ? (
+                              <div className="flex items-center gap-1.5">
+                                <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 gap-1 text-[11px]">
+                                  <Users className="h-3 w-3" />
+                                  <span>All Students</span>
+                                </Badge>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-indigo-500 shrink-0" />
+                                <div>
+                                  <p className="font-semibold text-foreground text-xs">
+                                    {w.students?.profiles?.full_name || "Student"}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {w.students?.profiles?.email}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-xs font-medium">
+                            {isAllBatches ? (
+                              <span className="text-muted-foreground italic">All Classes</span>
+                            ) : (
+                              w.batches?.name || "Batch"
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <Badge variant="outline" className="text-xs font-semibold border-amber-400/60 text-amber-600 dark:text-amber-400 bg-amber-500/10">
+                              {formattedMonth}
+                            </Badge>
+                          </td>
+                          <td className="py-3.5 px-4 text-xs text-muted-foreground max-w-xs truncate">
+                            {w.reason || <span className="italic">No notes</span>}
+                          </td>
+                          <td className="py-3.5 px-4 text-xs text-muted-foreground">
+                            {formatDate(w.created_at)}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 gap-1.5"
+                              onClick={() => setDeleteWaiverTarget(w)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span>Undo</span>
+                            </Button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-border/60 bg-card p-10 text-center space-y-2">
+              <div className="h-10 w-10 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+                <ShieldAlert className="h-5 w-5" />
+              </div>
+              <h4 className="font-bold text-sm text-foreground">No Fee Waivers Active</h4>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                Click "Waive Month" to grant a fee exemption for an individual student or all students.
+              </p>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Tab 4: Fee Structures */}
         <TabsContent value="structures" className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             {(structures || []).map((fs) => (
@@ -360,11 +525,38 @@ export function FeesManagementPage() {
         }}
       />
 
+      {/* Waive Month Modal */}
+      <WaiveMonthModal
+        open={waiveModalOpen}
+        onOpenChange={setWaiveModalOpen}
+        initialStudentId={targetStudentId}
+        initialBatchId={targetBatchId}
+      />
+
       {/* Printable Receipt Modal */}
       <PrintableReceiptModal
         payment={selectedReceipt}
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
+      />
+
+      {/* Confirm Delete Waiver Dialog */}
+      <ConfirmDialog
+        open={!!deleteWaiverTarget}
+        onOpenChange={(open) => !open && setDeleteWaiverTarget(null)}
+        title="Undo Fee Waiver?"
+        description={
+          deleteWaiverTarget?.student_id
+            ? `Are you sure you want to remove the waiver for ${deleteWaiverTarget.students?.profiles?.full_name || "this student"} for ${deleteWaiverTarget ? format(parseISO(deleteWaiverTarget.month), "MMM yyyy") : ""}? Tuition fees will once again be calculated as pending due.`
+            : `Are you sure you want to remove the institute-wide fee waiver for ALL students for ${deleteWaiverTarget ? format(parseISO(deleteWaiverTarget.month), "MMM yyyy") : ""}? Tuition fees will once again be calculated as pending due for all enrolled students.`
+        }
+        confirmText="Remove Waiver"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteWaiverTarget) {
+            deleteWaiverMutation.mutate(deleteWaiverTarget.id)
+          }
+        }}
       />
     </div>
   )

@@ -207,3 +207,6 @@ export async function deleteTeacher(id: string, profileId: string) {
     }
   }
 }
+
+export { resetUserPassword } from "@/services/auth-admin"
+

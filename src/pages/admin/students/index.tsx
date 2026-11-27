@@ -10,10 +10,12 @@ import {
   Trash2,
   Eye,
   Filter,
+  Key,
 } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { ResetPasswordDialog, type ResetPasswordTarget } from "@/components/shared/reset-password-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -40,6 +42,7 @@ export function StudentsListPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingStudent, setEditingStudent] = useState<StudentListItem | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<StudentListItem | null>(null)
+  const [resetTarget, setResetTarget] = useState<ResetPasswordTarget | null>(null)
 
   const { data: students, isLoading } = useQuery({
     queryKey: ["students"],
@@ -262,6 +265,18 @@ export function StudentsListPage() {
                               <Edit2 className="mr-2 h-4 w-4" /> Edit Details
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onClick={() =>
+                                setResetTarget({
+                                  id: student.profile_id,
+                                  name: student.profiles?.full_name || "Student",
+                                  email: student.profiles?.email || "",
+                                  role: "student",
+                                })
+                              }
+                            >
+                              <Key className="mr-2 h-4 w-4" /> Reset Password
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => setDeleteTarget(student)}
                               className="text-destructive focus:text-destructive"
                             >
@@ -310,6 +325,13 @@ export function StudentsListPage() {
         confirmText="Delete Student"
         isLoading={deleteMutation.isPending}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+      />
+
+      {/* Reset Password Dialog */}
+      <ResetPasswordDialog
+        open={!!resetTarget}
+        onOpenChange={(open) => !open && setResetTarget(null)}
+        user={resetTarget}
       />
     </div>
   )

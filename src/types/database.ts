@@ -36,6 +36,7 @@ export interface Student {
   guardian_phone: string | null
   address: string | null
   status: StudentStatus
+  fee_start_month?: string | null
   created_at: string
 }
 
@@ -102,6 +103,22 @@ export interface FeePayment {
   notes: string | null
   recorded_by: string | null
   created_at: string
+}
+
+export interface FeeWaiver {
+  id: string
+  student_id: string | null
+  batch_id: string | null
+  month: string // "YYYY-MM-01"
+  reason: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export interface FeeWaiverWithDetails extends FeeWaiver {
+  students?: (Student & { profiles: Profile }) | null
+  batches?: Batch | null
+  created_by_profile?: Profile | null
 }
 
 export interface Attendance {

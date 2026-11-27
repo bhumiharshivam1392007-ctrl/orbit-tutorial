@@ -35,6 +35,7 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
   const [address, setAddress] = useState("")
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([])
   const [status, setStatus] = useState<"active" | "inactive">("active")
+  const [feeStartMonth, setFeeStartMonth] = useState("")
 
   // Fetch available batches
   const { data: batches } = useQuery({
@@ -58,6 +59,7 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
         (studentToEdit.enrollments || []).map((e) => e.batch_id)
       )
       setStatus(studentToEdit.status)
+      setFeeStartMonth(studentToEdit.fee_start_month ? studentToEdit.fee_start_month.slice(0, 7) : "")
     } else {
       setFullName("")
       setEmail("")
@@ -70,6 +72,7 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
       setAddress("")
       setSelectedBatchIds([])
       setStatus("active")
+      setFeeStartMonth("")
     }
   }, [studentToEdit, open])
 
@@ -92,6 +95,7 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
         address: address.trim() || undefined,
         batch_ids: selectedBatchIds,
         status,
+        fee_start_month: feeStartMonth ? `${feeStartMonth}-01` : null,
       }
 
       if (studentToEdit) {
@@ -287,6 +291,25 @@ export function StudentModal({ open, onOpenChange, studentToEdit }: StudentModal
                   </button>
                 )
               })}
+            </div>
+          </div>
+
+          {/* Fee Start Month */}
+          <div className="space-y-2 pt-2 border-t border-border/60">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              4. Fee Settings (Optional)
+            </h4>
+            <div className="space-y-1.5">
+              <Label htmlFor="s-fee-start">Fee Start Month</Label>
+              <Input
+                id="s-fee-start"
+                type="month"
+                value={feeStartMonth}
+                onChange={(e) => setFeeStartMonth(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Fees will be charged from this month. Leave empty to start from registration month.
+              </p>
             </div>
           </div>
 

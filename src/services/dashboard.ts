@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase"
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns"
 import type { FeePaymentWithDetails } from "@/types/database"
+import { evaluateMonthFeeStatus, getMonthInfo } from "@/lib/fee-calculations"
 
 export interface DashboardStats {
   totalStudents: number
@@ -17,11 +18,11 @@ export interface DashboardStats {
 }
 
 export async function fetchAdminDashboardStats(): Promise<DashboardStats> {
-  const currentMonthLabel = format(new Date(), "MMM yyyy")
+  const curMonthInfo = getMonthInfo(new Date())
   const startOfCurMonth = format(startOfMonth(new Date()), "yyyy-MM-dd")
   const endOfCurMonth = format(endOfMonth(new Date()), "yyyy-MM-dd")
 
-  // 1. Fetch counts in parallel
+  // 1. Fetch counts & initial records in parallel
   const [
     studentsRes,
     teachersRes,
@@ -30,6 +31,7 @@ export async function fetchAdminDashboardStats(): Promise<DashboardStats> {
     recentPaymentsRes,
     allPaymentsRes,
     enrollmentsRes,
+    waiversRes,
   ] = await Promise.all([
     supabase.from("students").select("id", { count: "exact" }).eq("status", "active"),
     supabase.from("teachers").select("id", { count: "exact" }).eq("status", "active"),
@@ -64,14 +66,23 @@ export async function fetchAdminDashboardStats(): Promise<DashboardStats> {
       .select(`
         student_id,
         batch_id,
+        enrolled_on,
+        students (
+          id,
+          fee_start_month,
+          created_at
+        ),
         batches (
           monthly_fee
         )
       `)
       .eq("status", "active"),
+    supabase
+      .from("fee_waivers")
+      .select("*"),
   ])
 
-  // Check for any parallel query errors
+  // Check for any primary parallel query errors (excluding optional waivers table if not yet migrated)
   const errors = [
     studentsRes.error,
     teachersRes.error,
@@ -94,24 +105,40 @@ export async function fetchAdminDashboardStats(): Promise<DashboardStats> {
     0
   )
 
-  // Calculate pending dues for current month
+  // Calculate pending dues for current month using fee_start_month and fee_waivers
   const paidPaymentsCurMonthRes = await supabase
     .from("fee_payments")
     .select("student_id, batch_id")
-    .eq("month_label", currentMonthLabel)
+    .eq("month_label", curMonthInfo.label)
     .eq("status", "paid")
 
   const paidSet = new Set(
     (paidPaymentsCurMonthRes.data || []).map((p: any) => `${p.student_id}_${p.batch_id}`)
   )
 
+  const waivers = (waiversRes.data || []) as any[]
+
   let pendingDuesCount = 0
   let pendingDuesAmount = 0
 
   for (const enr of (enrollmentsRes.data || []) as any[]) {
     const key = `${enr.student_id}_${enr.batch_id}`
+    const isPaid = paidSet.has(key)
     const fee = Number(enr.batches?.monthly_fee || 0)
-    if (!paidSet.has(key) && fee > 0) {
+
+    const evaluation = evaluateMonthFeeStatus({
+      studentId: enr.student_id,
+      batchId: enr.batch_id,
+      monthlyFee: fee,
+      targetMonth: curMonthInfo.date,
+      feeStartMonth: enr.students?.fee_start_month,
+      enrolledOn: enr.enrolled_on,
+      studentCreatedAt: enr.students?.created_at,
+      waivers,
+      isPaid,
+    })
+
+    if (evaluation.isDue) {
       pendingDuesCount++
       pendingDuesAmount += fee
     }
@@ -150,4 +177,3 @@ export async function fetchAdminDashboardStats(): Promise<DashboardStats> {
     monthlyCollectionChart: last6Months,
   }
 }
-

@@ -1,5 +1,13 @@
 import { supabase } from "@/lib/supabase"
 import type { AttendanceStatus, PaymentMode } from "@/types/database"
+import {
+  getEffectiveFeeStartMonth,
+  getMonthInfo,
+  getMonthsBetween,
+  findMatchingWaiver,
+  evaluateMonthFeeStatus,
+} from "@/lib/fee-calculations"
+import { startOfMonth, isAfter } from "date-fns"
 
 export interface StudentSubjectItem {
   id: string
@@ -37,6 +45,22 @@ export interface StudentFeePaymentItem {
   created_at: string
 }
 
+export interface StudentMonthLedgerItem {
+  id: string
+  batch_id: string
+  batch_name: string
+  month_label: string
+  month_iso: string
+  monthly_fee: number
+  status: "paid" | "waived" | "due"
+  waiver_reason?: string | null
+  payment_id?: string
+  payment_date?: string
+  payment_mode?: string
+  transaction_ref?: string | null
+  payment_item?: StudentFeePaymentItem
+}
+
 export interface StudentAttendanceRecord {
   id: string
   batch_id: string
@@ -70,18 +94,24 @@ export interface StudentDashboardData {
   }
   payments: StudentFeePaymentItem[]
   recentAnnouncements: StudentAnnouncementItem[]
+  feeStatus?: {
+    isDue: boolean
+    isWaived: boolean
+    isPaid: boolean
+    statusLabel: string
+  }
 }
 
 /**
  * Fetch the student record linked to the logged-in profile ID
  */
-export async function getStudentByProfileId(profileId: string) {
+export async function getStudentByProfileId(profileId: string): Promise<any> {
   if (!profileId) return null
 
   // 1. Fetch from students table using only actual existing schema columns
   const { data, error } = await supabase
     .from("students")
-    .select("id, profile_id, guardian_name, guardian_phone, address, date_of_birth, gender, status, created_at")
+    .select("id, profile_id, guardian_name, guardian_phone, address, date_of_birth, gender, status, created_at, fee_start_month")
     .eq("profile_id", profileId)
     .maybeSingle()
 
@@ -101,7 +131,7 @@ export async function getStudentByProfileId(profileId: string) {
         profile_id: profileId,
         status: "active",
       } as any)
-      .select("id, profile_id, guardian_name, guardian_phone, address, date_of_birth, gender, status, created_at")
+      .select("id, profile_id, guardian_name, guardian_phone, address, date_of_birth, gender, status, created_at, fee_start_month")
       .maybeSingle()
 
     if (newStudent) return newStudent
@@ -319,6 +349,67 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
     })
   }
 
+  // 6. Compute current month fee status (taking fee_start_month and waivers into account)
+  let feeStatus: { isDue: boolean; isWaived: boolean; isPaid: boolean; statusLabel: string } = {
+    isDue: false,
+    isWaived: false,
+    isPaid: false,
+    statusLabel: "Up to date",
+  }
+
+  if (student && batches.length > 0) {
+    const curMonthInfo = getMonthInfo(new Date())
+    let waivers: any[] = []
+    try {
+      const { data: wData } = await supabase
+        .from("fee_waivers")
+        .select("*")
+        .or(`student_id.eq.${student.id},student_id.is.null`)
+      waivers = wData || []
+    } catch {
+      waivers = []
+    }
+
+    let anyDue = false
+    let allWaived = true
+
+    for (const b of batches) {
+      const isPaid = payments.some(
+        (p) =>
+          p.batch_id === b.batch_id &&
+          (p.month_label === curMonthInfo.label || getMonthInfo(p.month_label).yearMonth === curMonthInfo.yearMonth) &&
+          p.status === "paid"
+      )
+
+      const evalResult = evaluateMonthFeeStatus({
+        studentId: student.id,
+        batchId: b.batch_id,
+        monthlyFee: b.monthly_fee,
+        targetMonth: curMonthInfo.date,
+        feeStartMonth: student.fee_start_month,
+        enrolledOn: b.enrolled_at,
+        studentCreatedAt: student.created_at,
+        waivers,
+        isPaid,
+      })
+
+      if (evalResult.isDue) {
+        anyDue = true
+        allWaived = false
+      } else if (evalResult.status === "paid") {
+        allWaived = false
+      }
+    }
+
+    if (anyDue) {
+      feeStatus = { isDue: true, isWaived: false, isPaid: false, statusLabel: "Pending monthly fee" }
+    } else if (allWaived && batches.length > 0) {
+      feeStatus = { isDue: false, isWaived: true, isPaid: false, statusLabel: "Fee waived this month" }
+    } else {
+      feeStatus = { isDue: false, isWaived: false, isPaid: true, statusLabel: "Up to date" }
+    }
+  }
+
   return {
     studentId,
     rollNumber: studentId ? studentId.slice(0, 8).toUpperCase() : null,
@@ -327,6 +418,7 @@ export async function fetchStudentDashboard(profileId: string): Promise<StudentD
     attendance: attendanceStats,
     payments,
     recentAnnouncements: announcements,
+    feeStatus,
   }
 }
 
@@ -372,10 +464,11 @@ export async function fetchStudentFeeLedger(profileId: string): Promise<{
   payments: StudentFeePaymentItem[]
   totalPaid: number
   monthlyTotal: number
+  ledgerItems: StudentMonthLedgerItem[]
 }> {
   const student = await getStudentByProfileId(profileId)
   if (!student) {
-    return { batches: [], payments: [], totalPaid: 0, monthlyTotal: 0 }
+    return { batches: [], payments: [], totalPaid: 0, monthlyTotal: 0, ledgerItems: [] }
   }
 
   // 1. Fetch batches
@@ -455,10 +548,103 @@ export async function fetchStudentFeeLedger(profileId: string): Promise<{
     .filter((p) => p.status === "paid")
     .reduce((sum, p) => sum + p.amount, 0)
 
+  // 3. Fetch active waivers applicable to this student
+  let waivers: any[] = []
+  try {
+    const { data: waiverData } = await supabase
+      .from("fee_waivers")
+      .select("*")
+      .or(`student_id.eq.${student.id},student_id.is.null`)
+    waivers = waiverData || []
+  } catch {
+    waivers = []
+  }
+
+  // 4. Build monthly ledger items
+  const ledgerItems: StudentMonthLedgerItem[] = []
+  const curMonth = startOfMonth(new Date())
+
+  for (const b of batches) {
+    const enrollment = (enrollments || []).find((e: any) => e.batch_id === b.batch_id)
+    const effectiveStart = getEffectiveFeeStartMonth(
+      student.fee_start_month,
+      enrollment?.enrolled_on || b.enrolled_at,
+      student.created_at
+    )
+
+    // If start month is in the future, student fee hasn't started yet
+    if (isAfter(effectiveStart, curMonth)) {
+      continue
+    }
+
+    const months = getMonthsBetween(effectiveStart, curMonth)
+
+    for (const m of months) {
+      // Find matching payment for this month & batch
+      const pay = payments.find(
+        (p) =>
+          p.batch_id === b.batch_id &&
+          (p.month_label === m.label || getMonthInfo(p.month_label).yearMonth === m.yearMonth) &&
+          p.status === "paid"
+      )
+
+      if (pay) {
+        ledgerItems.push({
+          id: `${b.batch_id}_${m.isoMonth}`,
+          batch_id: b.batch_id,
+          batch_name: b.batch_name,
+          month_label: m.label,
+          month_iso: m.isoMonth,
+          monthly_fee: b.monthly_fee,
+          status: "paid",
+          payment_id: pay.id,
+          payment_date: pay.payment_date,
+          payment_mode: pay.payment_mode,
+          transaction_ref: pay.transaction_ref,
+          payment_item: pay,
+        })
+        continue
+      }
+
+      // Check waiver
+      const waiver = findMatchingWaiver(waivers, student.id, b.batch_id, m.date)
+      if (waiver) {
+        ledgerItems.push({
+          id: `${b.batch_id}_${m.isoMonth}`,
+          batch_id: b.batch_id,
+          batch_name: b.batch_name,
+          month_label: m.label,
+          month_iso: m.isoMonth,
+          monthly_fee: b.monthly_fee,
+          status: "waived",
+          waiver_reason: waiver.reason || "Fee waived by administration",
+        })
+        continue
+      }
+
+      // If fee > 0, it's due
+      if (b.monthly_fee > 0) {
+        ledgerItems.push({
+          id: `${b.batch_id}_${m.isoMonth}`,
+          batch_id: b.batch_id,
+          batch_name: b.batch_name,
+          month_label: m.label,
+          month_iso: m.isoMonth,
+          monthly_fee: b.monthly_fee,
+          status: "due",
+        })
+      }
+    }
+  }
+
+  // Sort newest months first
+  ledgerItems.sort((a, b) => b.month_iso.localeCompare(a.month_iso))
+
   return {
     batches,
     payments,
     totalPaid,
     monthlyTotal,
+    ledgerItems,
   }
 }

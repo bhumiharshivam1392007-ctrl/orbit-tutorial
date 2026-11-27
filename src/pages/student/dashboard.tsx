@@ -93,9 +93,21 @@ export function StudentDashboardPage() {
         <StatCard
           title="Monthly Tuition"
           value={isLoading ? "—" : formatCurrency(monthlyFeeTotal)}
-          description={isUpToDate ? "Recent payment recorded" : "Pending monthly fee"}
+          description={
+            dashboard?.feeStatus
+              ? dashboard.feeStatus.statusLabel
+              : isUpToDate
+              ? "Recent payment recorded"
+              : "Pending monthly fee"
+          }
           icon={CreditCard}
-          gradient="from-amber-500/10 to-orange-500/10 text-amber-600 dark:text-amber-400"
+          gradient={
+            dashboard?.feeStatus?.isWaived
+              ? "from-amber-500/10 to-orange-500/10 text-amber-600 dark:text-amber-400"
+              : dashboard?.feeStatus?.isDue
+              ? "from-rose-500/10 to-pink-500/10 text-rose-600 dark:text-rose-400"
+              : "from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400"
+          }
           delay={0.1}
         />
         <StatCard

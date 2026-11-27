@@ -12,9 +12,11 @@ import {
   CheckCircle2,
   Printer,
   Clock,
+  Key,
 } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { StatCard } from "@/components/shared/stat-card"
+import { ResetPasswordDialog } from "@/components/shared/reset-password-dialog"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { fetchStudentById } from "@/services/students"
 import { PrintableReceiptModal } from "@/components/shared/printable-receipt"
 import { formatCurrency, formatDate, getInitials } from "@/lib/utils"
+import { format, parseISO } from "date-fns"
 import type { FeePaymentWithDetails } from "@/types/database"
 
 export function StudentProfilePage() {
@@ -31,6 +34,7 @@ export function StudentProfilePage() {
 
   const [selectedReceipt, setSelectedReceipt] = useState<FeePaymentWithDetails | null>(null)
   const [receiptModalOpen, setReceiptModalOpen] = useState(false)
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false)
 
   const { data: student, isLoading } = useQuery({
     queryKey: ["student", id],
@@ -124,11 +128,26 @@ export function StudentProfilePage() {
                     <span>DOB: {formatDate(student.date_of_birth)}</span>
                   </span>
                 )}
+                {student.fee_start_month && (
+                  <span className="flex items-center gap-1.5 font-medium text-indigo-600 dark:text-indigo-400">
+                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                    <span>Fee Starts: {format(parseISO(student.fee_start_month), "MMM yyyy")}</span>
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setResetPasswordOpen(true)}
+              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Key className="h-3.5 w-3.5 text-indigo-500" />
+              <span>Reset Password</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -309,6 +328,25 @@ export function StudentProfilePage() {
 
             <div className="pt-4 border-t border-border/60">
               <h4 className="text-sm font-bold text-foreground uppercase tracking-wider mb-3">
+                Billing & Fee Schedule
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-xs text-muted-foreground block">Fee Start Month</span>
+                  <span className="font-semibold text-foreground">
+                    {student.fee_start_month
+                      ? format(parseISO(student.fee_start_month), "MMMM yyyy")
+                      : `Registration Month (${formatDate(student.created_at)})`}
+                  </span>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Tuition fees are calculated from this month onwards.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border/60">
+              <h4 className="text-sm font-bold text-foreground uppercase tracking-wider mb-3">
                 Residential Address
               </h4>
               <p className="text-sm text-foreground flex items-center gap-2">
@@ -325,6 +363,22 @@ export function StudentProfilePage() {
         payment={selectedReceipt}
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
+      />
+
+      {/* Reset Password Dialog */}
+      <ResetPasswordDialog
+        open={resetPasswordOpen}
+        onOpenChange={setResetPasswordOpen}
+        user={
+          student
+            ? {
+                id: student.profile_id,
+                name: student.profiles?.full_name || "Student",
+                email: student.profiles?.email || "",
+                role: "student",
+              }
+            : null
+        }
       />
     </div>
   )

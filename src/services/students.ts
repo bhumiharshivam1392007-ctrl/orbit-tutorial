@@ -14,6 +14,7 @@ export interface StudentFormData {
   address?: string
   batch_ids?: string[]
   status?: "active" | "inactive"
+  fee_start_month?: string | null
 }
 
 export interface StudentListItem extends StudentWithProfile {
@@ -168,6 +169,7 @@ export async function createStudent(data: StudentFormData) {
         guardian_phone: data.guardian_phone || null,
         address: data.address || null,
         status: data.status || "active",
+        fee_start_month: data.fee_start_month || null,
       } as any)
       .eq("id", (existingStudent as any).id)
       .select()
@@ -186,6 +188,7 @@ export async function createStudent(data: StudentFormData) {
         guardian_phone: data.guardian_phone || null,
         address: data.address || null,
         status: data.status || "active",
+        fee_start_month: data.fee_start_month || null,
       } as any)
       .select()
       .single()
@@ -243,16 +246,19 @@ export async function updateStudent(
   }
 
   // Update student table
+  const studentUpdatePayload: any = {
+    date_of_birth: data.date_of_birth || null,
+    gender: data.gender || null,
+    guardian_name: data.guardian_name || null,
+    guardian_phone: data.guardian_phone || null,
+    address: data.address || null,
+  }
+  if (data.status !== undefined) studentUpdatePayload.status = data.status
+  if (data.fee_start_month !== undefined) studentUpdatePayload.fee_start_month = data.fee_start_month || null
+
   const { data: updated, error } = await supabase
     .from("students")
-    .update({
-      date_of_birth: data.date_of_birth || null,
-      gender: data.gender || null,
-      guardian_name: data.guardian_name || null,
-      guardian_phone: data.guardian_phone || null,
-      address: data.address || null,
-      status: data.status,
-    } as any)
+    .update(studentUpdatePayload)
     .eq("id", id)
     .select()
     .single()
@@ -286,3 +292,5 @@ export async function deleteStudent(id: string, profileId: string) {
   if (error) throw error
   await supabase.from("profiles").delete().eq("id", profileId)
 }
+
+export { resetUserPassword } from "@/services/auth-admin"

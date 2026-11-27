@@ -11,10 +11,12 @@ import {
   MoreVertical,
   Edit2,
   Trash2,
+  Key,
 } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { ResetPasswordDialog, type ResetPasswordTarget } from "@/components/shared/reset-password-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
@@ -37,6 +39,7 @@ export function TeachersListPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTeacher, setEditingTeacher] = useState<TeacherListItem | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<TeacherListItem | null>(null)
+  const [resetTarget, setResetTarget] = useState<ResetPasswordTarget | null>(null)
 
   const { data: teachers, isLoading } = useQuery({
     queryKey: ["teachers"],
@@ -160,6 +163,18 @@ export function TeachersListPage() {
                         <Edit2 className="mr-2 h-4 w-4" /> Edit Profile
                       </DropdownMenuItem>
                       <DropdownMenuItem
+                        onClick={() =>
+                          setResetTarget({
+                            id: teacher.profile_id,
+                            name: teacher.profiles?.full_name || "Faculty Member",
+                            email: teacher.profiles?.email || "",
+                            role: "teacher",
+                          })
+                        }
+                      >
+                        <Key className="mr-2 h-4 w-4" /> Reset Password
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
                         onClick={() => setDeleteTarget(teacher)}
                         className="text-destructive focus:text-destructive"
                       >
@@ -232,6 +247,13 @@ export function TeachersListPage() {
         confirmText="Remove Teacher"
         isLoading={deleteMutation.isPending}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+      />
+
+      {/* Reset Password Dialog */}
+      <ResetPasswordDialog
+        open={!!resetTarget}
+        onOpenChange={(open) => !open && setResetTarget(null)}
+        user={resetTarget}
       />
     </div>
   )
