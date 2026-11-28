@@ -20,7 +20,12 @@ export async function resetUserPassword(
     throw new Error("Password must be at least 8 characters long")
   }
 
+  // Ensure active session token is present
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData?.session?.access_token
+
   const { data, error } = await supabase.functions.invoke("reset-user-password", {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: {
       user_id: userId,
       new_password: newPassword,

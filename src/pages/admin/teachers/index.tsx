@@ -165,7 +165,7 @@ export function TeachersListPage() {
                       <DropdownMenuItem
                         onClick={() =>
                           setResetTarget({
-                            id: teacher.profile_id,
+                            id: teacher.profile_id || teacher.id,
                             name: teacher.profiles?.full_name || "Faculty Member",
                             email: teacher.profiles?.email || "",
                             role: "teacher",

@@ -372,7 +372,7 @@ export function StudentProfilePage() {
         user={
           student
             ? {
-                id: student.profile_id,
+                id: student.profile_id || student.id,
                 name: student.profiles?.full_name || "Student",
                 email: student.profiles?.email || "",
                 role: "student",
