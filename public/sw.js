@@ -3,7 +3,7 @@
  * Safe caching strategy optimized for Vite SPA + Supabase + Vercel deployments.
  */
 
-const CACHE_VERSION = 'orbit-pwa-v1.0.0';
+const CACHE_VERSION = 'orbit-pwa-v1.0.2';
 const STATIC_CACHE = `orbit-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `orbit-runtime-${CACHE_VERSION}`;
 
@@ -127,7 +127,9 @@ self.addEventListener('fetch', (event) => {
             }
             return networkResponse;
           })
-          .catch(() => cachedResponse);
+          .catch(() => {
+            return new Response('', { status: 404, statusText: 'Not Found' });
+          });
       })
     );
     return;
@@ -148,9 +150,12 @@ self.addEventListener('fetch', (event) => {
             }
             return networkResponse;
           })
-          .catch(() => cachedResponse);
+          .catch(() => null);
 
-        return cachedResponse || fetchPromise;
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetchPromise.then((res) => res || new Response('', { status: 404 }));
       })
     );
     return;
@@ -167,7 +172,11 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(async () => {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          return new Response('Not found or offline', { status: 503, statusText: 'Service Unavailable' });
+        })
     );
   }
 });

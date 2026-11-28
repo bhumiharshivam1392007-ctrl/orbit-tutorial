@@ -24,6 +24,7 @@ import { format } from "date-fns"
 export function TeacherDashboardPage() {
   const navigate = useNavigate()
   const { profile } = useAuth()
+  const [viewTab, setViewTab] = useState<"today" | "all">("today")
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ["teacher-dashboard", profile?.id],
@@ -45,7 +46,6 @@ export function TeacherDashboardPage() {
     )
   }
 
-  const [viewTab, setViewTab] = useState<"today" | "all">("today")
   const todayDayName = format(new Date(), "EEEE")
 
   const { teacher, batches, totalStudents, todayAttendanceStats, recentAnnouncements, todayLectures } =
